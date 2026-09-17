@@ -1,0 +1,19 @@
+/* ============================================
+   Computer Hero — Container for image + screen target
+   ============================================ */
+
+.computer-hero {
+  position: absolute;
+  height: auto;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.computer-hero__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}

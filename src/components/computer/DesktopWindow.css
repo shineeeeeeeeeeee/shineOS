@@ -1,0 +1,223 @@
+/* ============================================
+   Desktop Window — macOS-Inspired Retro Window
+   ============================================ */
+
+.desktop-window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: #1e2d30;
+  border: 1px solid #3a4a4d;
+  border-radius: 6px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition:
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+  z-index: 10;
+  min-width: 320px;
+  min-height: 220px;
+}
+
+.desktop-window--active {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: #4a5a5d;
+}
+
+.desktop-window--maximized {
+  border-radius: 0;
+  top: 24px !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: calc(100vh - 24px) !important;
+}
+
+/* Titlebar */
+.desktop-window__titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #e8e0d8 0%, #d4c8b8 100%);
+  border-bottom: 1px solid #b8a898;
+  user-select: none;
+  cursor: default;
+  -webkit-app-region: drag;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.desktop-window--active .desktop-window__titlebar {
+  background: linear-gradient(180deg, #f0e8e0 0%, #e0d8d0 100%);
+  border-bottom-color: #b8a898;
+}
+
+.desktop-window__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.desktop-window__control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+  -webkit-app-region: no-drag;
+}
+
+.desktop-window__control::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.desktop-window__control--close {
+  color: #e04a3a;
+  border: 1px solid #c03a2a;
+}
+
+.desktop-window__control--minimize {
+  color: #d8a03a;
+  border: 1px solid #b8802a;
+}
+
+.desktop-window__control--maximize {
+  color: #3aa04a;
+  border: 1px solid #2a803a;
+}
+
+.desktop-window__control:hover {
+  transform: scale(1.1);
+}
+
+.desktop-window__control:focus-visible {
+  outline: 2px solid #c8b8a8;
+  outline-offset: 2px;
+}
+
+.desktop-window__control--close:hover {
+  background: #e04a3a;
+  color: #fff;
+}
+
+.desktop-window__control--minimize:hover {
+  background: #d8a03a;
+  color: #fff;
+}
+
+.desktop-window__control--maximize:hover {
+  background: #3aa04a;
+  color: #fff;
+}
+
+.desktop-window__title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3a3028;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 20px;
+  -webkit-app-region: drag;
+}
+
+/* Content area */
+.desktop-window__content {
+  flex: 1;
+  overflow: auto;
+  background: #182528;
+  color: #d4c4b0;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 20px;
+}
+
+/* Resize handle */
+.desktop-window__resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.05) 50%);
+  pointer-events: auto;
+}
+
+.desktop-window__resize-handle::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Reduced motion */
+.desktop-window--reduced-motion {
+  transition: none;
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .desktop-window {
+    min-width: 280px;
+    min-height: 180px;
+  }
+  .desktop-window__titlebar {
+    height: 26px;
+    padding: 0 10px;
+  }
+  .desktop-window__control {
+    width: 12px;
+    height: 12px;
+  }
+  .desktop-window__title {
+    font-size: 11px;
+  }
+  .desktop-window__content {
+    padding: 16px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 479px) {
+  .desktop-window {
+    min-width: 100vw;
+    min-height: calc(100vh - 24px);
+    border-radius: 0;
+    left: 0 !important;
+    top: 24px !important;
+    width: 100vw !important;
+    height: calc(100vh - 24px) !important;
+  }
+  .desktop-window__resize-handle {
+    display: none;
+  }
+}

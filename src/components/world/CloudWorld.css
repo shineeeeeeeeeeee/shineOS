@@ -1,0 +1,107 @@
+/* ============================================
+   Cloud World — World Shell Styles
+   ============================================ */
+
+.cloud-world {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
+  background: #9ec5d4;
+  cursor: default;
+  transform-origin: var(--crt-screen-center-x) var(--crt-screen-center-y);
+  will-change: transform;
+}
+
+/* Sky fills the entire viewport */
+.cloud-world__sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ============================================
+   Camera Transition — Cinematic CRT Entry
+   ============================================ */
+
+/* Transitioning state: camera moves toward CRT screen */
+.cloud-world--transitioning {
+  /* Transform is driven by JS animation loop */
+  transition: none !important;
+}
+
+/* ============================================
+   Responsive Composition
+   ============================================ */
+
+/* Desktop: 1440+ */
+@media (min-width: 1440px) {
+  .computer-hero {
+    width: clamp(280px, 27vw, 380px);
+  }
+  .floating-platform {
+    width: clamp(340px, 49vw, 700px);
+  }
+}
+
+/* Laptop: 1280–1439 */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .computer-hero {
+    width: clamp(240px, 27vw, 340px);
+  }
+  .floating-platform {
+    width: clamp(300px, 49vw, 620px);
+  }
+}
+
+/* Tablet: 1024–1279 */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .computer-hero {
+    width: clamp(200px, 27vw, 280px);
+  }
+  .floating-platform {
+    width: clamp(260px, 49vw, 540px);
+  }
+}
+
+/* Mobile: < 1024 */
+@media (max-width: 1023px) {
+  .computer-hero {
+    width: clamp(160px, 40vw, 240px);
+  }
+  .floating-platform {
+    width: clamp(220px, 68vw, 380px);
+  }
+}
+
+/* Small mobile: < 480 */
+@media (max-width: 479px) {
+  .computer-hero {
+    width: clamp(130px, 42vw, 200px);
+  }
+  .floating-platform {
+    width: clamp(180px, 76vw, 300px);
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-layer__cloud,
+  .floating-platform,
+  .computer-hero,
+  .cloud-world {
+    will-change: auto;
+    transition: none !important;
+  }
+}

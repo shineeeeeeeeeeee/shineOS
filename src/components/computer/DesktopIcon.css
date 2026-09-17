@@ -1,0 +1,151 @@
+/* ============================================
+   Desktop Icon — macOS-Inspired Retro Desktop Icon
+   ============================================ */
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 80px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.desktop-icon:focus-visible {
+  outline: 2px solid #c8b8a8;
+  outline-offset: 2px;
+  background-color: rgba(200, 184, 168, 0.2);
+  box-shadow: 0 0 0 2px rgba(200, 184, 168, 0.3);
+}
+
+.desktop-icon__image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #e8e0d8;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.desktop-icon__image svg {
+  width: 100%;
+  height: 100%;
+}
+
+.desktop-icon__label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  color: #f0e8e0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* Hover state */
+.desktop-icon--hovered {
+  background-color: rgba(200, 184, 168, 0.15);
+}
+
+.desktop-icon--hovered .desktop-icon__image {
+  transform: scale(1.05);
+}
+
+/* Pressed/active state */
+.desktop-icon--pressed {
+  transform: scale(0.95);
+  background-color: rgba(200, 184, 168, 0.25);
+}
+
+/* Selected state */
+.desktop-icon--selected {
+  background-color: rgba(200, 184, 168, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 184, 168, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.desktop-icon--selected .desktop-icon__image {
+  color: #fff;
+}
+
+/* Disabled state */
+.desktop-icon--disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.desktop-icon--disabled .desktop-icon__label {
+  color: #988878;
+}
+
+.desktop-icon--disabled .desktop-icon__image {
+  color: #887868;
+  filter: none;
+}
+
+.desktop-icon__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 16px;
+  padding: 0 8px;
+  margin-top: 2px;
+  border-radius: 8px;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5a5048;
+  background: linear-gradient(180deg, #e8e0d8 0%, #d4c8b8 100%);
+  border: 1px solid #b8a898;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Reduced motion */
+.desktop-icon--reduced-motion {
+  transition: none;
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .desktop-icon {
+    width: 72px;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+  .desktop-icon__image {
+    width: 42px;
+    height: 42px;
+  }
+  .desktop-icon__label {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 479px) {
+  .desktop-icon {
+    width: 68px;
+    padding: 6px 5px;
+  }
+  .desktop-icon__image {
+    width: 38px;
+    height: 38px;
+  }
+  .desktop-icon__label {
+    font-size: 9px;
+  }
+}

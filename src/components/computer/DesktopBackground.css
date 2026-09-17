@@ -1,0 +1,76 @@
+/* ============================================
+   Desktop Background — CRT Desktop Environment
+   ============================================ */
+
+.desktop-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Deep CRT teal/green tone */
+  background: #1a2a2e;
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(40, 70, 75, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(30, 55, 60, 0.3) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(26, 42, 46, 1) 0%, rgba(20, 35, 38, 1) 100%);
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Subtle vignette */
+.desktop-background__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+  opacity: 0.6;
+}
+
+/* CRT scanlines */
+.desktop-background__scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  opacity: 0.4;
+  animation: scanline-flicker 8s linear infinite;
+}
+
+@keyframes scanline-flicker {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.35; }
+}
+
+/* Subtle analog noise texture */
+.desktop-background__noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Reduced motion - disable animations */
+.desktop-background--reduced-motion .desktop-background__scanlines {
+  animation: none;
+  opacity: 0.35;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+  .desktop-background__scanlines {
+    background-size: 100% 6px;
+  }
+}
+
+@media (max-width: 479px) {
+  .desktop-background__vignette {
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.4) 100%);
+  }
+}
