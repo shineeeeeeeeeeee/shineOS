@@ -37,5 +37,9 @@ coverage/
 # Vite
 .vite/
 
+# Project docs (keep locally, not on GitHub)
+ART_BIBLE.md
+PROJECT_SPEC.md
+
 # Misc
 *.local
