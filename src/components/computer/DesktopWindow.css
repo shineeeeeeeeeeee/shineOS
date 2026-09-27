@@ -48,9 +48,24 @@
   background: linear-gradient(180deg, #e8e0d8 0%, #d4c8b8 100%);
   border-bottom: 1px solid #b8a898;
   user-select: none;
-  cursor: default;
+  cursor: grab;
   -webkit-app-region: drag;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.desktop-window__titlebar:active {
+  cursor: grabbing;
+}
+
+.desktop-window--dragging .desktop-window__titlebar {
+  cursor: grabbing;
+}
+
+.desktop-window--dragging {
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .desktop-window--active .desktop-window__titlebar {

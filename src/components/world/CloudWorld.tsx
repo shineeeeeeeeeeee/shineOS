@@ -6,17 +6,18 @@ import FloatingPlatform from './FloatingPlatform'
 import ComputerHero from './ComputerHero'
 import './CloudWorld.css'
 
-type SceneState = 'world' | 'entering-computer' | 'computer'
+type SceneState = 'world' | 'entering-computer' | 'computer' | 'exiting-computer'
 
 interface CloudWorldProps {
   config: WorldConfig
   sceneState: SceneState
   onEnterComputer: () => void
   onTransitionComplete: () => void
+  onExitComplete?: () => void
   reducedMotion: boolean
 }
 
-const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComputer, onTransitionComplete, reducedMotion }) => {
+const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComputer, onTransitionComplete, onExitComplete, reducedMotion }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number | null>(null)
   const mouseRef = useRef({ x: 0, y: 0 })
@@ -26,11 +27,15 @@ const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComp
   const [crtScreenSize, setCrtScreenSize] = useState({ width: 0, height: 0 })
   const transitionStartRef = useRef<number | null>(null)
   const transitionRafRef = useRef<number | null>(null)
+  const [isExiting, setIsExiting] = useState(false)
+  void isExiting // used in exit transition effect
 
   // Cinematic transition duration (ms)
   const TRANSITION_DURATION = 1200
   // Easing: ease-in with slight acceleration (smoothstep)
   const easeInCinematic = (t: number): number => t * t * (3 - 2 * t)
+  // Easing for exit: ease-out with slight deceleration
+  const easeOutCinematic = (t: number): number => 1 - (1 - t) * (1 - t) * (3 - 2 * (1 - t))
 
   // Trigger transition when sceneState changes to 'entering-computer'
   useEffect(() => {
@@ -93,6 +98,71 @@ const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComp
       }
     }
   }, [sceneState, reducedMotion, crtScreenCenter, crtScreenSize, onTransitionComplete])
+
+  // Trigger exit transition when sceneState changes to 'exiting-computer'
+  useEffect(() => {
+    if (sceneState !== 'exiting-computer') return
+
+    const container = containerRef.current
+    if (!container) return
+
+    setIsExiting(true)
+    const startTime = performance.now()
+    transitionStartRef.current = startTime
+
+    const animateExitTransition = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / TRANSITION_DURATION, 1)
+      const easedProgress = easeOutCinematic(progress)
+
+      // Reverse camera transform: scale back to 1, translate back to 0
+      const targetScaleX = crtScreenSize.width > 0 ? 100 / crtScreenSize.width : 1
+      const targetScaleY = crtScreenSize.height > 0 ? 100 / crtScreenSize.height : 1
+      const targetScale = Math.max(targetScaleX, targetScaleY) * 1.05
+
+      const currentScale = targetScale + (1 - targetScale) * easedProgress
+      const translateX = (50 - crtScreenCenter.x) * (1 - easedProgress)
+      const translateY = (50 - crtScreenCenter.y) * (1 - easedProgress)
+
+      container.style.transform = `translate(${translateX}%, ${translateY}%) scale(${currentScale})`
+      container.style.transformOrigin = `${crtScreenCenter.x}% ${crtScreenCenter.y}%`
+      container.style.setProperty('--camera-progress', (1 - easedProgress).toString())
+      container.style.setProperty('--camera-progress-raw', (1 - progress).toString())
+
+      if (progress < 1) {
+        transitionRafRef.current = requestAnimationFrame(animateExitTransition)
+      } else {
+        // Reset transform completely
+        container.style.transform = 'none'
+        container.style.transformOrigin = 'center center'
+        container.style.setProperty('--camera-progress', '0')
+        container.style.setProperty('--camera-progress-raw', '0')
+        setIsExiting(false)
+        onExitComplete?.()
+        transitionStartRef.current = null
+        transitionRafRef.current = null
+      }
+    }
+
+    if (reducedMotion) {
+      container.style.transform = 'none'
+      container.style.transformOrigin = 'center center'
+      container.style.setProperty('--camera-progress', '0')
+      container.style.setProperty('--camera-progress-raw', '0')
+      setIsExiting(false)
+      onExitComplete?.()
+      transitionStartRef.current = null
+    } else {
+      transitionRafRef.current = requestAnimationFrame(animateExitTransition)
+    }
+
+    return () => {
+      if (transitionRafRef.current) {
+        cancelAnimationFrame(transitionRafRef.current)
+        transitionRafRef.current = null
+      }
+    }
+  }, [sceneState, reducedMotion, crtScreenCenter, crtScreenSize, onExitComplete])
 
   // Calculate CRT screen metrics
   const calculateCrtScreenMetrics = useCallback(() => {
@@ -213,6 +283,9 @@ const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComp
     }
   }, [config.parallax.maxOffset, config.parallax.smoothing, reducedMotion, handleMouseMove, handleTouchMove, sceneState])
 
+  // Interaction hint visibility: show in world state, fade during transition
+  const showHint = sceneState === 'world'
+
   // Render world scene
   const renderWorld = () => (
     <>
@@ -248,12 +321,25 @@ const CloudWorld: React.FC<CloudWorldProps> = ({ config, sceneState, onEnterComp
         zIndex={config.computer.zIndex}
         onEnterComputer={onEnterComputer}
       />
+      {showHint && (
+        <div
+          className="cloud-world__hint"
+          aria-hidden="true"
+          style={{
+            left: `calc(${config.computer.x} + ${config.computer.width} * 0.85)`,
+            top: `calc(${config.computer.y} - ${config.computer.width} * 0.15)`,
+            transform: 'translateX(-50%)',
+          } as React.CSSProperties}
+        >
+          psst... the screen works.
+        </div>
+      )}
     </>
   )
 
   return (
     <div
-      className={`cloud-world ${sceneState !== 'world' ? 'cloud-world--transitioning' : ''}`}
+      className={`cloud-world ${sceneState !== 'world' ? 'cloud-world--transitioning' : ''} ${sceneState === 'exiting-computer' ? 'cloud-world--exiting' : ''}`}
       ref={containerRef}
       style={{
         '--crt-screen-center-x': `${crtScreenCenter.x}%`,

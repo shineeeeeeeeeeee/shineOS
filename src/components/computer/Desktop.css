@@ -132,6 +132,97 @@
   color: #7a6a5a;
 }
 
+/* Dock space */
+.desktop__icons--dock {
+  bottom: 72px;
+}
+
+/* Hide desktop icons */
+.desktop__icons--hidden {
+  display: none !important;
+}
+
+/* Context menu */
+.context-menu {
+  position: fixed;
+  min-width: 180px;
+  padding: 6px 0;
+  background: #f0e8e0;
+  border: 1px solid #b8a898;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1002;
+  animation: context-menu-appear 100ms var(--ease-out);
+}
+
+@keyframes context-menu-appear {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.context-menu--reduced-motion {
+  animation: none;
+}
+
+.context-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: #3a3028;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.context-menu__item:hover {
+  background: #d4c8b8;
+  color: #1a1a1a;
+}
+
+.context-menu__item:focus-visible {
+  outline: 2px solid #c8b8a8;
+  outline-offset: -2px;
+}
+
+.context-menu__item--submenu {
+  position: relative;
+  cursor: pointer;
+}
+
+.context-menu__submenu-arrow {
+  font-size: 10px;
+  color: #7a6a5a;
+  margin-left: 8px;
+}
+
+.context-menu--submenu {
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  margin-left: 2px;
+  min-width: 160px;
+  padding: 6px 0;
+  background: #f0e8e0;
+  border: 1px solid #b8a898;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1003;
+  animation: context-menu-appear 100ms var(--ease-out);
+}
+
+.context-menu__divider {
+  height: 1px;
+  margin: 6px 8px;
+  background: #c8b8a8;
+  opacity: 0.5;
+}
+
 /* Responsive */
 @media (max-width: 1023px) {
   .desktop__icons {

@@ -11,6 +11,10 @@ interface WindowManagerContextValue {
   resizeWindow: (id: string, width: number, height: number) => void
   minimizeWindow: (id: string) => void
   maximizeWindow: (id: string) => void
+  restoreWindow: (id: string) => void
+  minimizeAll: () => void
+  closeAll: () => void
+  bringAllToFront: () => void
   getNextZIndex: () => number
 }
 
@@ -28,7 +32,6 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const openWindow = useCallback((windowData: Omit<WindowState, 'zIndex'>) => {
     setWindows((prev) => {
-      // Check if window already exists
       const existing = prev.find((w) => w.id === windowData.id)
       if (existing) {
         return prev.map((w) =>
@@ -77,9 +80,44 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const maximizeWindow = useCallback((id: string) => {
     setWindows((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, isMaximized: !w.isMaximized } : w))
+      prev.map((w) => {
+        if (w.id !== id) return w
+        if (w.isMaximized) {
+          const prevPos = w.previousPosition || { x: 100, y: 100, width: 480, height: 360 }
+          return { ...w, isMaximized: false, x: prevPos.x, y: prevPos.y, width: prevPos.width, height: prevPos.height }
+        }
+        return {
+          ...w,
+          isMaximized: true,
+          previousPosition: { x: w.x, y: w.y, width: w.width, height: w.height },
+        }
+      })
     )
   }, [])
+
+  const restoreWindow = useCallback((id: string) => {
+    setWindows((prev) =>
+      prev.map((w) => {
+        if (w.id !== id || !w.isMaximized) return w
+        const prevPos = w.previousPosition || { x: 100, y: 100, width: 480, height: 360 }
+        return { ...w, isMaximized: false, x: prevPos.x, y: prevPos.y, width: prevPos.width, height: prevPos.height }
+      })
+    )
+  }, [])
+
+  const minimizeAll = useCallback(() => {
+    setWindows((prev) => prev.map((w) => ({ ...w, isMinimized: true })))
+    setActiveWindowId(null)
+  }, [])
+
+  const closeAll = useCallback(() => {
+    setWindows([])
+    setActiveWindowId(null)
+  }, [])
+
+  const bringAllToFront = useCallback(() => {
+    setWindows((prev) => prev.map((w) => ({ ...w, zIndex: getNextZIndex() })))
+  }, [getNextZIndex])
 
   const value = useMemo(
     () => ({
@@ -92,6 +130,10 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       resizeWindow,
       minimizeWindow,
       maximizeWindow,
+      restoreWindow,
+      minimizeAll,
+      closeAll,
+      bringAllToFront,
       getNextZIndex,
     }),
     [
@@ -104,6 +146,10 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       resizeWindow,
       minimizeWindow,
       maximizeWindow,
+      restoreWindow,
+      minimizeAll,
+      closeAll,
+      bringAllToFront,
       getNextZIndex,
     ]
   )

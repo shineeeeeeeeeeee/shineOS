@@ -4,7 +4,7 @@ import Desktop from '../components/computer/Desktop'
 import { worldConfig } from '../data/world'
 import './World.css'
 
-type SceneState = 'world' | 'entering-computer' | 'computer'
+type SceneState = 'world' | 'entering-computer' | 'computer' | 'exiting-computer'
 
 const World: React.FC = () => {
   const [sceneState, setSceneState] = useState<SceneState>('world')
@@ -21,6 +21,14 @@ const World: React.FC = () => {
     setSceneState('computer')
   }, [])
 
+  const handleExitComputer = useCallback(() => {
+    setSceneState('exiting-computer')
+  }, [])
+
+  const handleExitComplete = useCallback(() => {
+    setSceneState('world')
+  }, [])
+
   // Listen for reduced motion changes
   React.useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -29,6 +37,17 @@ const World: React.FC = () => {
     return () => mediaQuery.removeEventListener('change', handler)
   }, [])
 
+  // Handle Escape key to exit computer
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sceneState === 'computer') {
+        handleExitComputer()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sceneState, handleExitComputer])
+
   return (
     <>
       <CloudWorld
@@ -36,10 +55,14 @@ const World: React.FC = () => {
         sceneState={sceneState}
         onEnterComputer={handleEnterComputer}
         onTransitionComplete={handleTransitionComplete}
+        onExitComplete={handleExitComplete}
         reducedMotion={reducedMotion}
       />
-      {sceneState === 'computer' && (
-        <Desktop reducedMotion={reducedMotion} />
+      {(sceneState === 'computer' || sceneState === 'exiting-computer') && (
+        <Desktop
+          reducedMotion={reducedMotion}
+          onExit={handleExitComputer}
+        />
       )}
     </>
   )

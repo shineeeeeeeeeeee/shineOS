@@ -1,0 +1,327 @@
+/* ============================================
+   Dock — SHINE OS Application Dock
+   ============================================ */
+
+/*
+ * The Dock container is layout-only: it centres the icon composition and is
+ * sized by its own content (`width: max-content`). It paints nothing itself —
+ * the visible capsule lives in `.dock__background`, whose box is derived from
+ * the exact occupied icon region so it can never drift away from the icons.
+ */
+.dock {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 8px);
+  padding: 8px;
+  z-index: 500;
+  overflow: visible;
+}
+
+/* Icon strip always sits above the capsule. */
+.dock > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dock__section {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Items keep their intrinsic footprint; the strip never squishes. */
+.dock .tooltip-wrapper {
+  flex-shrink: 0;
+}
+
+/*
+ * Capsule. Geometry is written every frame from the same composition the icon
+ * transforms use (--dock-bg-x/y/w/h), so the background expands, contracts and
+ * shifts with the magnified neighbourhood instead of sitting still beneath it.
+ */
+.dock__background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: var(--dock-bg-w, 100%);
+  height: var(--dock-bg-h, 100%);
+  transform: translate3d(var(--dock-bg-x, 0px), var(--dock-bg-y, 0px), 0);
+  background: rgba(30, 45, 48, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(200, 184, 168, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.dock > .dock__background {
+  position: absolute;
+  z-index: 0;
+}
+
+.dock__slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dock__divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(200, 184, 168, 0.15);
+  border-radius: 1px;
+  margin: 0 2px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/*
+ * The item box is the visual icon box: the glyph is centred inside it and the
+ * Dock padding provides the capsule padding, so every edge icon gets the same
+ * optical margin. The forgiving hit area below replaces the old negative-margin
+ * padding hack, which used to crowd the glyph against the capsule edge.
+ */
+.dock__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #c8b8a8;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+  transform-origin: bottom center;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  will-change: transform;
+}
+
+.dock__item::before {
+  content: '';
+  position: absolute;
+  inset: -10px -14px;
+  border-radius: 12px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.dock__item:hover,
+.dock__item--hovered {
+  background: rgba(200, 184, 168, 0.12);
+  color: #f0e8e0;
+}
+
+.dock__item:focus-visible {
+  outline: 2px solid #c8b8a8;
+  outline-offset: 2px;
+}
+
+.dock__item--active {
+  color: #e8e0d8;
+}
+
+.dock__item--active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: #c8b8a8;
+  border-radius: 1px;
+}
+
+.dock__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 2px;
+}
+
+.dock__item-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dock__item-indicator {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c8b8a8;
+}
+
+.dock__item-indicator--running {
+  background: #6a9a8d;
+}
+
+.dock__item--minimized {
+  opacity: 0.6;
+}
+
+.dock__item--running {
+  opacity: 0.85;
+}
+
+.dock__item--trash {
+  opacity: 0.7;
+}
+
+.dock__item--trash:hover {
+  opacity: 1;
+}
+
+.dock__divider--section {
+  width: 1px;
+  height: 28px;
+  background: rgba(200, 184, 168, 0.15);
+  border-radius: 1px;
+  margin: 0 2px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Reduced motion */
+.dock--reduced-motion .dock__item {
+  transition: none;
+}
+
+.dock--reduced-motion .dock__item:hover,
+.dock--reduced-motion .dock__item--hovered {
+  background: rgba(200, 184, 168, 0.12);
+}
+
+/* Responsive — padding, gap and icon size scale together so the capsule keeps
+   the same proportional padding and the whole strip always fits the viewport. */
+@media (max-width: 1023px) {
+  .dock {
+    bottom: 8px;
+    padding: 7px;
+    gap: 4px;
+  }
+  .dock__section {
+    gap: 4px;
+  }
+  .dock__item {
+    width: 40px;
+    height: 40px;
+  }
+  .dock__item-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .dock__divider {
+    height: 24px;
+  }
+  .dock__background {
+    border-radius: 11px;
+  }
+}
+
+@media (max-width: 479px) {
+  .dock {
+    bottom: 6px;
+    padding: 6px;
+    gap: 3px;
+  }
+  .dock__section {
+    gap: 3px;
+  }
+  .dock__item {
+    width: 36px;
+    height: 36px;
+    border-radius: 7px;
+  }
+  .dock__item-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .dock__divider {
+    height: 20px;
+    margin: 0 1px;
+  }
+  .dock__background {
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 419px) {
+  .dock {
+    bottom: 6px;
+    padding: 5px;
+    gap: 2px;
+  }
+  .dock__section {
+    gap: 2px;
+  }
+  .dock__item {
+    width: 30px;
+    height: 30px;
+    padding: 2px;
+    border-radius: 6px;
+  }
+  .dock__item-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .dock__item::before {
+    inset: -8px -10px;
+  }
+  .dock__divider {
+    height: 18px;
+    margin: 0;
+  }
+  .dock__background {
+    border-radius: 9px;
+  }
+}
+
+@media (max-width: 359px) {
+  .dock {
+    bottom: 4px;
+    padding: 4px;
+    gap: 2px;
+  }
+  .dock__section {
+    gap: 2px;
+  }
+  .dock__item {
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+  }
+  .dock__item-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .dock__divider {
+    height: 16px;
+  }
+  .dock__background {
+    border-radius: 8px;
+  }
+}

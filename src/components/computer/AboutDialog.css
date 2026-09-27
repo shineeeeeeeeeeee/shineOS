@@ -1,0 +1,64 @@
+/* ============================================
+   About Shine OS Dialog
+   ============================================ */
+
+.about-dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #d4c4b0;
+}
+
+.about-dialog__header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #3a4a4d;
+  flex-shrink: 0;
+}
+
+.about-dialog__title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #f0e8e0;
+  letter-spacing: 0.04em;
+}
+
+.about-dialog__tagline {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #9a8a7a;
+}
+
+.about-dialog__body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 24px;
+}
+
+.about-dialog__body p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c8b8a8;
+}
+
+.about-dialog__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #3a4a4d;
+  font-size: 11px;
+  color: #7a6a5a;
+}
+
+.about-dialog__dot {
+  opacity: 0.5;
+}
+
+/* Reduced motion */
+.about-dialog--reduced-motion {
+  transition: none;
+}

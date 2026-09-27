@@ -38,6 +38,52 @@
   transition: none !important;
 }
 
+/* Exiting state: camera pulls back from CRT screen */
+.cloud-world--exiting {
+  /* Transform is driven by JS animation loop */
+  transition: none !important;
+}
+
+/* ============================================
+   Interaction Hint
+   ============================================ */
+
+.cloud-world__hint {
+  position: absolute;
+  /* Positioned via inline styles relative to computer */
+  transform: translateX(-50%);
+  font-family: 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(60, 50, 45, 0.6);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+  white-space: nowrap;
+  animation: hint-fade-in 1.5s ease-out 1s forwards;
+  opacity: 0;
+}
+
+@keyframes hint-fade-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Responsive hint */
+@media (max-width: 1023px) {
+  .cloud-world__hint {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 479px) {
+  .cloud-world__hint {
+    font-size: 11px;
+  }
+}
+
 /* ============================================
    Responsive Composition
    ============================================ */
