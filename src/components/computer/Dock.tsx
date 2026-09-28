@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useWindowManager } from './WindowManager'
-import Tooltip from '../Tooltip'
 import { getApplicationById, applications } from '../../data/applications'
 import PlaceholderWindow from './PlaceholderWindow'
 import './Dock.css'
@@ -104,6 +103,11 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   const slotRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const rafRef = useRef<number | null>(null)
+  // Mirrors `hoveredId` for the animation loop, so the label can be repositioned
+  // every frame without a React render.
+  const hoveredIdRef = useRef<string | null>(null)
+  // Single label element for the whole Dock, parked above the magnified icons.
+  const labelRef = useRef<HTMLSpanElement>(null)
 
   const rawPointerXRef = useRef<number | null>(null)
   const pointerAnchorXRef = useRef<number | null>(null)
@@ -131,6 +135,14 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     borderLeft: 0,
     borderTop: 0,
   })
+  // Resting (un-magnified) capsule box. The capsule is a fixed-height strip:
+  // only its horizontal extent is allowed to respond to the magnified composition.
+  const restingBackground = useRef({ y: 0, height: 0 })
+  // Dock's border-box top in viewport space, used to keep the label on screen.
+  const dockViewportTop = useRef(0)
+  // Label height, sampled once per hover change (never per frame) so the
+  // viewport clamp below can keep the whole label inside the screen.
+  const labelHeight = useRef(0)
   const lastMeasure = useRef(0)
 
   // All registered applications are pinned, in registry order. Single source of truth.
@@ -186,9 +198,11 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   }, [windows, openWindow, focusWindow])
 
   /**
-   * Writes the capsule box as CSS variables derived from the occupied icon
-   * region: every item's transformed bounds, expanded by the Dock padding.
-   * Pure geometry — no new animation system, no React state.
+   * Writes the capsule box as CSS variables. The capsule is a fixed-height
+   * horizontal strip: its Y and height come from the resting (un-magnified)
+   * layout measured once per layout pass, and only X and width follow the
+   * magnified/displaced icon composition. Pure geometry — no second animation
+   * system, no React state.
    */
   const applyDockBackground = useCallback(() => {
     const dockEl = dockRef.current
@@ -200,40 +214,76 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
 
     let left = Infinity
     let right = -Infinity
-    let top = Infinity
-    let bottom = -Infinity
 
     for (const id of ids) {
       const box = boxes[id]
       const c = composition.current[id] ?? { shift: 0, scale: 1, lift: 0 }
       const centerX = box.left + box.width / 2 + c.shift
-      const width = box.width * c.scale
-      const height = box.height * c.scale
-      const itemBottom = box.top + box.height - c.lift
+      const halfWidth = (box.width * c.scale) / 2
 
-      if (centerX - width / 2 < left) left = centerX - width / 2
-      if (centerX + width / 2 > right) right = centerX + width / 2
-      if (itemBottom - height < top) top = itemBottom - height
-      if (itemBottom > bottom) bottom = itemBottom
+      if (centerX - halfWidth < left) left = centerX - halfWidth
+      if (centerX + halfWidth > right) right = centerX + halfWidth
     }
 
     const metrics = dockMetrics.current
-    dockEl.style.setProperty(
-      '--dock-bg-x',
-      `${(left - metrics.padLeft - metrics.borderLeft).toFixed(2)}px`,
-    )
-    dockEl.style.setProperty(
-      '--dock-bg-y',
-      `${(top - metrics.padTop - metrics.borderTop).toFixed(2)}px`,
-    )
-    dockEl.style.setProperty(
-      '--dock-bg-w',
-      `${(right + metrics.padRight - (left - metrics.padLeft)).toFixed(2)}px`,
-    )
-    dockEl.style.setProperty(
-      '--dock-bg-h',
-      `${(bottom + metrics.padBottom - (top - metrics.padTop)).toFixed(2)}px`,
-    )
+    const resting = restingBackground.current
+
+    let x = left - metrics.padLeft - metrics.borderLeft
+    let width = right + metrics.padRight - (left - metrics.padLeft)
+
+    // Never let the strip grow past the viewport on narrow screens.
+    const maxWidth = window.innerWidth - 16
+    if (width > maxWidth && maxWidth > 0) {
+      const center = x + width / 2
+      width = maxWidth
+      x = center - width / 2
+    }
+
+    dockEl.style.setProperty('--dock-bg-x', `${x.toFixed(2)}px`)
+    dockEl.style.setProperty('--dock-bg-w', `${width.toFixed(2)}px`)
+    dockEl.style.setProperty('--dock-bg-y', `${resting.y.toFixed(2)}px`)
+    dockEl.style.setProperty('--dock-bg-h', `${resting.height.toFixed(2)}px`)
+  }, [])
+
+  /**
+   * Moves the hover label. It rides the same loop as the icons: X follows the
+   * hovered icon's displaced center, Y is derived from the topmost point of the
+   * current composition so the label can never sit on top of a magnified glyph.
+   */
+  const applyDockLabel = useCallback(() => {
+    const dockEl = dockRef.current
+    if (!dockEl) return
+
+    const metrics = dockMetrics.current
+    const hovered = hoveredIdRef.current
+    if (hovered) {
+      const box = itemBoxes.current[hovered]
+      // Falls back to the resting composition, which is the exact state under
+      // reduced motion where the loop is not running.
+      const c = composition.current[hovered] ?? { shift: 0, scale: 1, lift: 0 }
+      if (box) {
+        const centerX = box.left + box.width / 2 + c.shift
+        const x = centerX - metrics.padLeft - metrics.borderLeft
+        dockEl.style.setProperty('--dock-label-x', `${x.toFixed(2)}px`)
+      }
+    }
+
+    let top = Infinity
+    for (const id of Object.keys(itemBoxes.current)) {
+      const box = itemBoxes.current[id]
+      const c = composition.current[id] ?? { shift: 0, scale: 1, lift: 0 }
+      const itemBottom = box.top + box.height - c.lift
+      const itemTop = itemBottom - box.height * c.scale
+      if (itemTop < top) top = itemTop
+    }
+    if (!isFinite(top)) return
+
+    // Small constant gap between the label and the topmost icon of the frame.
+    // Y is the label's bottom edge, so the body always clears the glyph.
+    const gap = 10
+    const y = top - gap - metrics.padTop - metrics.borderTop
+    const minY = 6 + labelHeight.current - dockViewportTop.current
+    dockEl.style.setProperty('--dock-label-y', `${Math.max(y, minY).toFixed(2)}px`)
   }, [])
 
   const measureSlots = useCallback(() => {
@@ -305,9 +355,32 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     }
     itemBoxes.current = boxes
 
+    // Resting capsule box: measured from the un-magnified layout boxes only.
+    // Height and vertical position stay frozen here; hover only moves X/width.
+    let restTop = Infinity
+    let restBottom = -Infinity
+    for (const id of measuredIds) {
+      const box = itemBoxes.current[id]
+      if (!box) continue
+      if (box.top < restTop) restTop = box.top
+      if (box.top + box.height > restBottom) restBottom = box.top + box.height
+    }
+    if (isFinite(restTop) && isFinite(restBottom)) {
+      restingBackground.current = {
+        y: restTop - dockMetrics.current.padTop - dockMetrics.current.borderTop,
+        height:
+          restBottom -
+          restTop +
+          dockMetrics.current.padTop +
+          dockMetrics.current.padBottom,
+      }
+    }
+    dockViewportTop.current = dockRect.top
+
     applyDockBackground()
+    applyDockLabel()
     lastMeasure.current = performance.now()
-  }, [pinnedApps, minimizedWindows, applyDockBackground])
+  }, [pinnedApps, minimizedWindows, applyDockBackground, applyDockLabel])
 
   const startRaf = useCallback(() => {
     if (rafRef.current) return
@@ -463,6 +536,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
       }
 
       applyDockBackground()
+      applyDockLabel()
 
       if (active || anyMoving) {
         rafRef.current = requestAnimationFrame(loop)
@@ -472,7 +546,26 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     }
 
     rafRef.current = requestAnimationFrame(loop)
-  }, [pinnedApps, minimizedWindows, reducedMotion, applyDockBackground])
+  }, [
+    pinnedApps,
+    minimizedWindows,
+    reducedMotion,
+    applyDockBackground,
+    applyDockLabel,
+  ])
+
+  const handleHover = useCallback(
+    (id: string | null) => {
+      hoveredIdRef.current = id
+      setHoveredId(id)
+      // Sampled once per hover change, not per frame.
+      if (labelRef.current) labelHeight.current = labelRef.current.offsetHeight
+      // The loop keeps tracking once it is running; this covers the first hover
+      // and the reduced-motion case where no loop is active at all.
+      applyDockLabel()
+    },
+    [applyDockLabel],
+  )
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dockRef.current) return
@@ -521,6 +614,18 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     return appWindows.some((w) => w.zIndex === maxZ && !w.isMinimized)
   }, [windows])
 
+  const getDockLabel = useCallback(
+    (id: string | null): string => {
+      if (!id) return ''
+      if (id === 'trash') return 'Trash'
+      const app = getApplicationById(id)
+      if (app) return app.name
+      const minimized = minimizedWindows.find((w) => w.id === id)
+      return minimized ? minimized.name : ''
+    },
+    [minimizedWindows],
+  )
+
   return (
     <nav
       ref={dockRef}
@@ -531,6 +636,19 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
       onPointerLeave={handlePointerLeave}
     >
       <span className="dock__background" aria-hidden="true" />
+      {/*
+        One label for the whole Dock. It is positioned entirely from the
+        existing animation loop (--dock-label-x / --dock-label-y) so it slides
+        with the hover target and always clears the magnified icon, while the
+        visible/hidden state stays a cheap class toggle.
+      */}
+      <span
+        ref={labelRef}
+        className={`dock__label ${hoveredId ? 'dock__label--visible' : ''}`}
+        aria-hidden="true"
+      >
+        <span className="dock__label-text">{getDockLabel(hoveredId)}</span>
+      </span>
       <div className="dock__section dock__section--pinned">
         {pinnedApps.map((app) => {
           const open = windows.find((w) => w.id === app.id)
@@ -539,32 +657,31 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
           const hasOpenWindow = open && !minimized
 
           return (
-            <Tooltip key={app.id} text={app.name} delay={400}>
-              <div
-                ref={(el) => { slotRefs.current[app.id] = el }}
-                className="dock__slot"
+            <div
+              key={app.id}
+              ref={(el) => { slotRefs.current[app.id] = el }}
+              className="dock__slot"
+            >
+              <button
+                ref={(el) => { itemRefs.current[app.id] = el }}
+                type="button"
+                className={`dock__item ${active ? 'dock__item--active' : ''} ${minimized ? 'dock__item--minimized' : ''} ${hoveredId === app.id ? 'dock__item--hovered' : ''} ${reducedMotion ? 'dock__item--reduced-motion' : ''}`}
+                onClick={() => handleDockClick(app.id)}
+                onMouseEnter={() => handleHover(app.id)}
+                onMouseLeave={() => handleHover(null)}
+                aria-label={app.name}
+                aria-pressed={active}
+                tabIndex={0}
+                style={{
+                  transform: `translateX(calc(var(--dock-shift, 0) * 1px)) scale(var(--dock-scale, 1)) translateY(calc(var(--dock-lift, 0) * -1px))`,
+                } as React.CSSProperties}
               >
-                <button
-                  ref={(el) => { itemRefs.current[app.id] = el }}
-                  type="button"
-                  className={`dock__item ${active ? 'dock__item--active' : ''} ${minimized ? 'dock__item--minimized' : ''} ${hoveredId === app.id ? 'dock__item--hovered' : ''} ${reducedMotion ? 'dock__item--reduced-motion' : ''}`}
-                  onClick={() => handleDockClick(app.id)}
-                  onMouseEnter={() => setHoveredId(app.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  aria-label={app.name}
-                  aria-pressed={active}
-                  tabIndex={0}
-                  style={{
-                    transform: `translateX(calc(var(--dock-shift, 0) * 1px)) scale(var(--dock-scale, 1)) translateY(calc(var(--dock-lift, 0) * -1px))`,
-                  } as React.CSSProperties}
-                >
-                  <span className="dock__item-icon" aria-hidden="true">
-                    {app.icon}
-                  </span>
-                  {hasOpenWindow && <span className="dock__item-indicator" aria-hidden="true" />}
-                </button>
-              </div>
-            </Tooltip>
+                <span className="dock__item-icon" aria-hidden="true">
+                  {app.icon}
+                </span>
+                {hasOpenWindow && <span className="dock__item-indicator" aria-hidden="true" />}
+              </button>
+            </div>
           )
         })}
       </div>
@@ -573,31 +690,30 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
           <div className="dock__divider dock__divider--section" role="separator" />
           <div className="dock__section dock__section--minimized">
             {minimizedWindows.map((w) => (
-              <Tooltip key={w.id} text={w.title || w.name} delay={400}>
-                <div
-                  ref={(el) => { slotRefs.current[w.id] = el }}
-                  className="dock__slot dock__slot--minimized"
+              <div
+                key={w.id}
+                ref={(el) => { slotRefs.current[w.id] = el }}
+                className="dock__slot dock__slot--minimized"
+              >
+                <button
+                  ref={(el) => { itemRefs.current[w.id] = el }}
+                  type="button"
+                  className={`dock__item dock__item--minimized ${hoveredId === w.id ? 'dock__item--hovered' : ''} ${reducedMotion ? 'dock__item--reduced-motion' : ''}`}
+                  onClick={() => handleDockClick(w.id)}
+                  onMouseEnter={() => handleHover(w.id)}
+                  onMouseLeave={() => handleHover(null)}
+                  aria-label={w.title || w.name}
+                  tabIndex={0}
+                  style={{
+                    transform: `translateX(calc(var(--dock-shift, 0) * 1px)) scale(var(--dock-scale, 1)) translateY(calc(var(--dock-lift, 0) * -1px))`,
+                  } as React.CSSProperties}
                 >
-                  <button
-                    ref={(el) => { itemRefs.current[w.id] = el }}
-                    type="button"
-                    className={`dock__item dock__item--minimized ${hoveredId === w.id ? 'dock__item--hovered' : ''} ${reducedMotion ? 'dock__item--reduced-motion' : ''}`}
-                    onClick={() => handleDockClick(w.id)}
-                    onMouseEnter={() => setHoveredId(w.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                    aria-label={w.title || w.name}
-                    tabIndex={0}
-                    style={{
-                      transform: `translateX(calc(var(--dock-shift, 0) * 1px)) scale(var(--dock-scale, 1)) translateY(calc(var(--dock-lift, 0) * -1px))`,
-                    } as React.CSSProperties}
-                  >
-                    <span className="dock__item-icon" aria-hidden="true">
-                      {w.icon}
-                    </span>
-                    <span className="dock__item-indicator dock__item-indicator--minimized" aria-hidden="true" />
-                  </button>
-                </div>
-              </Tooltip>
+                  <span className="dock__item-icon" aria-hidden="true">
+                    {w.icon}
+                  </span>
+                  <span className="dock__item-indicator dock__item-indicator--minimized" aria-hidden="true" />
+                </button>
+              </div>
             ))}
           </div>
         </>
@@ -612,8 +728,8 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
           type="button"
           className="dock__item dock__item--trash"
           onClick={() => {}}
-          onMouseEnter={() => setHoveredId('trash')}
-          onMouseLeave={() => setHoveredId(null)}
+          onMouseEnter={() => handleHover('trash')}
+          onMouseLeave={() => handleHover(null)}
           aria-label="Trash"
           tabIndex={0}
           style={{
