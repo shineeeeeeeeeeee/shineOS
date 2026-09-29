@@ -137,13 +137,20 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   })
   // Resting (un-magnified) capsule box. The capsule is a fixed-height strip:
   // only its horizontal extent is allowed to respond to the magnified composition.
-  const restingBackground = useRef({ y: 0, height: 0 })
+  // centerX is the fixed horizontal center the capsule must never drift from.
+  const restingBackground = useRef({ y: 0, height: 0, centerX: 0, width: 0 })
   // Dock's border-box top in viewport space, used to keep the label on screen.
   const dockViewportTop = useRef(0)
   // Label height, sampled once per hover change (never per frame) so the
   // viewport clamp below can keep the whole label inside the screen.
   const labelHeight = useRef(0)
   const lastMeasure = useRef(0)
+  // Lightweight spring for the background width only. This gives the capsule
+  // a smooth enter/exit expansion without touching the icon magnification
+  // springs. Stored in a ref so no per-frame React state is created.
+  const bgWidthSpring = useRef<{ width: number; v: number } | null>(null)
+  const bgWidthReady = useRef(false)
+  const prevRestingWidth = useRef(0)
 
   // All registered applications are pinned, in registry order. Single source of truth.
   const pinnedApps = DOCK_APPS
@@ -200,9 +207,13 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   /**
    * Writes the capsule box as CSS variables. The capsule is a fixed-height
    * horizontal strip: its Y and height come from the resting (un-magnified)
-   * layout measured once per layout pass, and only X and width follow the
-   * magnified/displaced icon composition. Pure geometry — no second animation
-   * system, no React state.
+   * layout measured once per layout pass, and only width responds to the
+   * magnified/displaced icon composition.
+   *
+   * The capsule's CENTER X is fixed at the resting icon-union center so the
+   * body never "chases" the cursor. Only the width grows/shrinks around that
+   * fixed center. A lightweight spring on the width gives smooth enter/exit
+   * expansion without a second animation system or per-frame React state.
    */
   const applyDockBackground = useCallback(() => {
     const dockEl = dockRef.current
@@ -228,22 +239,53 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     const metrics = dockMetrics.current
     const resting = restingBackground.current
 
-    let x = left - metrics.padLeft - metrics.borderLeft
-    let width = right + metrics.padRight - (left - metrics.padLeft)
+    // Required width from the transformed union, including capsule padding.
+    let width = right - left + metrics.padLeft + metrics.padRight
 
     // Never let the strip grow past the viewport on narrow screens.
     const maxWidth = window.innerWidth - 16
     if (width > maxWidth && maxWidth > 0) {
-      const center = x + width / 2
       width = maxWidth
-      x = center - width / 2
     }
 
+    // Re-initialise the width spring when the resting layout changes
+    // (resize / content change) so we never snap from a stale value.
+    if (
+      !bgWidthReady.current ||
+      Math.abs(resting.width - prevRestingWidth.current) > 1
+    ) {
+      bgWidthSpring.current = { width, v: 0 }
+      prevRestingWidth.current = resting.width
+      bgWidthReady.current = true
+    } else if (reducedMotion) {
+      // Reduced motion: no interpolation, set directly.
+      bgWidthSpring.current = { width, v: 0 }
+    } else {
+      // Lightweight spring interpolation for smooth enter/exit.
+      const s = bgWidthSpring.current
+      if (s) {
+        const force = (width - s.width) * DOCK_CONFIG.springStiffness
+        s.v += force * 0.016
+        s.v *= Math.exp(-DOCK_CONFIG.springDamping * 0.016)
+        s.width += s.v * 0.016
+        if (Math.abs(s.width - width) < 0.5) {
+          s.width = width
+          s.v = 0
+        }
+      }
+    }
+
+    const interpolatedWidth = bgWidthSpring.current?.width ?? width
+
+    // Fixed center: the capsule center never drifts from the resting center.
+    // Only the width changes; X is derived from the fixed center.
+    const x = resting.centerX - metrics.borderLeft - interpolatedWidth / 2
+
     dockEl.style.setProperty('--dock-bg-x', `${x.toFixed(2)}px`)
-    dockEl.style.setProperty('--dock-bg-w', `${width.toFixed(2)}px`)
+    dockEl.style.setProperty('--dock-bg-w', `${interpolatedWidth.toFixed(2)}px`)
     dockEl.style.setProperty('--dock-bg-y', `${resting.y.toFixed(2)}px`)
     dockEl.style.setProperty('--dock-bg-h', `${resting.height.toFixed(2)}px`)
-  }, [])
+  }, [reducedMotion])
 
   /**
    * Moves the hover label. It rides the same loop as the icons: X follows the
@@ -262,8 +304,11 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
       // reduced motion where the loop is not running.
       const c = composition.current[hovered] ?? { shift: 0, scale: 1, lift: 0 }
       if (box) {
+        // Center the label exactly on the hovered icon's displaced center.
+        // The label sits at the padding edge (left:0), so we only subtract
+        // the border offset to convert from border-box to padding-edge coords.
         const centerX = box.left + box.width / 2 + c.shift
-        const x = centerX - metrics.padLeft - metrics.borderLeft
+        const x = centerX - metrics.borderLeft
         dockEl.style.setProperty('--dock-label-x', `${x.toFixed(2)}px`)
       }
     }
@@ -357,15 +402,20 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
 
     // Resting capsule box: measured from the un-magnified layout boxes only.
     // Height and vertical position stay frozen here; hover only moves X/width.
+    // centerX is the FIXED horizontal center the capsule must never drift from.
     let restTop = Infinity
     let restBottom = -Infinity
+    let restLeft = Infinity
+    let restRight = -Infinity
     for (const id of measuredIds) {
       const box = itemBoxes.current[id]
       if (!box) continue
       if (box.top < restTop) restTop = box.top
       if (box.top + box.height > restBottom) restBottom = box.top + box.height
+      if (box.left < restLeft) restLeft = box.left
+      if (box.left + box.width > restRight) restRight = box.left + box.width
     }
-    if (isFinite(restTop) && isFinite(restBottom)) {
+    if (isFinite(restTop) && isFinite(restBottom) && isFinite(restLeft) && isFinite(restRight)) {
       restingBackground.current = {
         y: restTop - dockMetrics.current.padTop - dockMetrics.current.borderTop,
         height:
@@ -373,6 +423,12 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
           restTop +
           dockMetrics.current.padTop +
           dockMetrics.current.padBottom,
+        centerX: (restLeft + restRight) / 2,
+        width:
+          restRight -
+          restLeft +
+          dockMetrics.current.padLeft +
+          dockMetrics.current.padRight,
       }
     }
     dockViewportTop.current = dockRect.top
