@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
-import { WindowManagerProvider, useWindowManager } from './WindowManager'
+import { WindowManagerProvider, useWindowManager, generateWindowId } from './WindowManager'
 import { DesktopStateProvider, useDesktopState } from './DesktopState'
 import DesktopBackground from './DesktopBackground'
 import SystemBar from './SystemBar'
@@ -7,7 +7,7 @@ import DesktopIcon from './DesktopIcon'
 import DesktopWindow from './DesktopWindow'
 import Dock from './Dock'
 import CRTEffects from './CRTEffects'
-import PlaceholderWindow from './PlaceholderWindow'
+import AppContent from './apps/AppContent'
 import type { SortBy } from '../../types'
 import type { DesktopIconData } from './DesktopIcon'
 import { getApplicationById } from '../../data/applications'
@@ -201,17 +201,38 @@ const DesktopInner: React.FC<DesktopProps> = ({ reducedMotion = false, onExit })
   const iconClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleIconOpen = useCallback((appId: string) => {
-    const existing = windows.find((w) => w.id === appId)
-    if (existing) {
-      if (existing.isMinimized) {
-        openWindow({ id: existing.id, title: existing.title, content: existing.content, x: existing.previousPosition?.x || 100, y: existing.previousPosition?.y || 100, width: existing.previousPosition?.width || existing.width, height: existing.previousPosition?.height || existing.height, isMinimized: false, isMaximized: existing.isMaximized, previousPosition: existing.previousPosition })
+    const appWindows = windows.filter((w) => w.applicationId === appId)
+    if (appWindows.length > 0) {
+      const nonMinimized = appWindows.find((w) => !w.isMinimized)
+      if (nonMinimized) {
+        focusWindow(nonMinimized.id)
+      } else {
+        // All windows for this app are minimized — restore the most recent.
+        const mostRecent = appWindows.reduce((latest, w) =>
+          w.zIndex > latest.zIndex ? w : latest
+        )
+        restoreWindow(mostRecent.id)
+        focusWindow(mostRecent.id)
       }
-      focusWindow(appId)
     } else {
       const app = getApplicationById(appId)
-      openWindow({ id: appId, title: app?.name || appId, content: <PlaceholderWindow title={app?.name || appId} />, x: 150, y: 150, width: app?.defaultWidth || 480, height: app?.defaultHeight || 360, isMinimized: false, isMaximized: false })
+      const newWindowId = generateWindowId(appId)
+      openWindow({
+        id: newWindowId,
+        applicationId: appId,
+        title: app?.name || appId,
+        content: (
+          <AppContent applicationId={appId} title={app?.name || appId} reducedMotion={reducedMotion} />
+        ),
+        x: 150,
+        y: 150,
+        width: app?.defaultWidth || 480,
+        height: app?.defaultHeight || 360,
+        isMinimized: false,
+        isMaximized: false,
+      })
     }
-  }, [windows, openWindow, focusWindow])
+  }, [windows, openWindow, focusWindow, restoreWindow, reducedMotion])
 
   const handleIconClick = useCallback((appId: string) => {
     iconClickCountRef.current[appId] = (iconClickCountRef.current[appId] || 0) + 1
@@ -249,6 +270,11 @@ const DesktopInner: React.FC<DesktopProps> = ({ reducedMotion = false, onExit })
   const handleMaximize = useCallback((id: string) => { maximizeWindow(id) }, [maximizeWindow])
   const handleRestore = useCallback((id: string) => { restoreWindow(id) }, [restoreWindow])
 
+  const handleIconSelect = useCallback((appId: string) => {
+    const window = windows.find((w) => w.applicationId === appId && !w.isMinimized)
+    if (window) focusWindow(window.id)
+  }, [windows, focusWindow])
+
   return (
     <div className="desktop" onContextMenu={handleDesktopContextMenu}>
       <DesktopBackground reducedMotion={reducedMotion} />
@@ -273,8 +299,8 @@ const DesktopInner: React.FC<DesktopProps> = ({ reducedMotion = false, onExit })
               >
                 <DesktopIcon
                   data={icon}
-                  isSelected={activeWindowId === icon.id}
-                  onSelect={focusWindow}
+                  isSelected={windows.some((w) => w.id === activeWindowId && w.applicationId === icon.id)}
+                  onSelect={handleIconSelect}
                   reducedMotion={reducedMotion}
                 />
               </div>

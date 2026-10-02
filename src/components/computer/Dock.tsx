@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useWindowManager } from './WindowManager'
+import { useWindowManager, generateWindowId } from './WindowManager'
 import { getApplicationById, applications } from '../../data/applications'
-import PlaceholderWindow from './PlaceholderWindow'
+import AppContent from './apps/AppContent'
 import './Dock.css'
 
 export interface DockApp {
@@ -97,11 +97,16 @@ const DOCK_CONFIG = {
 }
 
 const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
-  const { windows, openWindow, focusWindow } = useWindowManager()
+  const { windows, openWindow, focusWindow, restoreWindow } = useWindowManager()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const dockRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  // Minimized windows share their id with the pinned app of the same name, so
+  // their measurement/magnification refs must be kept separate from the pinned
+  // refs to avoid one overwriting the other.
+  const minimizedSlotRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const minimizedItemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const rafRef = useRef<number | null>(null)
   // Mirrors `hoveredId` for the animation loop, so the label can be repositioned
   // every frame without a React render.
@@ -158,9 +163,10 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   const minimizedWindows = windows
     .filter((w) => w.isMinimized)
     .map((w) => {
-      const app = getApplicationById(w.id)
+      const app = getApplicationById(w.applicationId)
       return {
         id: w.id,
+        applicationId: w.applicationId,
         title: w.title,
         icon: app ? getDockIcon(app.id) : undefined,
         name: app?.name || w.title,
@@ -168,32 +174,46 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     })
     .sort((a, b) => a.id.localeCompare(b.id))
 
-  const handleDockClick = useCallback((appId: string) => {
-    const open = windows.find((w) => w.id === appId)
-    if (open) {
-      if (open.isMinimized) {
-        openWindow({
-          id: open.id,
-          title: open.title,
-          content: open.content,
-          x: open.previousPosition?.x || 100,
-          y: open.previousPosition?.y || 100,
-          width: open.previousPosition?.width || open.width,
-          height: open.previousPosition?.height || open.height,
-          isMinimized: false,
-          isMaximized: open.isMaximized,
-          previousPosition: open.previousPosition,
-        })
-        focusWindow(appId)
+  const handleDockClick = useCallback((dockItemId: string) => {
+    // If the clicked ID matches a window ID, this is a minimized-window Dock
+    // item. Restore that exact window (not a new application instance).
+    const windowById = windows.find((w) => w.id === dockItemId)
+    if (windowById) {
+      if (windowById.isMinimized) {
+        restoreWindow(dockItemId)
+      }
+      focusWindow(dockItemId)
+      return
+    }
+
+    // Otherwise this is a pinned-app click. Find windows by applicationId.
+    const appWindows = windows.filter((w) => w.applicationId === dockItemId)
+    if (appWindows.length > 0) {
+      const nonMinimized = appWindows.find((w) => !w.isMinimized)
+      if (nonMinimized) {
+        focusWindow(nonMinimized.id)
       } else {
-        focusWindow(appId)
+        // All windows for this app are minimized — restore the most recent.
+        const mostRecent = appWindows.reduce((latest, w) =>
+          w.zIndex > latest.zIndex ? w : latest
+        )
+        restoreWindow(mostRecent.id)
+        focusWindow(mostRecent.id)
       }
     } else {
-      const app = getApplicationById(appId)
+      const app = getApplicationById(dockItemId)
+      const newWindowId = generateWindowId(dockItemId)
       openWindow({
-        id: appId,
-        title: app?.name || appId,
-        content: <PlaceholderWindow title={app?.name || appId} />,
+        id: newWindowId,
+        applicationId: dockItemId,
+        title: app?.name || dockItemId,
+        content: (
+          <AppContent
+            applicationId={dockItemId}
+            title={app?.name || dockItemId}
+            reducedMotion={reducedMotion}
+          />
+        ),
         x: 150,
         y: 150,
         width: app?.defaultWidth || 480,
@@ -202,7 +222,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
         isMaximized: false,
       })
     }
-  }, [windows, openWindow, focusWindow])
+  }, [windows, openWindow, focusWindow, restoreWindow, reducedMotion])
 
   /**
    * Writes the capsule box as CSS variables. The capsule is a fixed-height
@@ -331,6 +351,15 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     dockEl.style.setProperty('--dock-label-y', `${Math.max(y, minY).toFixed(2)}px`)
   }, [])
 
+  // Minimized windows share their id with a pinned app, so their DOM refs live
+  // in a separate map. Pinned apps always use slotRefs/itemRefs; minimized
+  // windows always use minimizedSlotRefs/minimizedItemRefs.
+  const minimizedIds = new Set(minimizedWindows.map((w) => w.id))
+  const getSlotEl = (id: string) =>
+    minimizedIds.has(id) ? minimizedSlotRefs.current[id] : slotRefs.current[id]
+  const getItemEl = (id: string) =>
+    minimizedIds.has(id) ? minimizedItemRefs.current[id] : itemRefs.current[id]
+
   const measureSlots = useCallback(() => {
     const dockEl = dockRef.current
     if (!dockEl) return
@@ -346,7 +375,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
     baseWidths.current = {}
 
     for (const id of allIds) {
-      const slotEl = slotRefs.current[id]
+      const slotEl = getSlotEl(id)
       if (!slotEl) continue
       const r = slotEl.getBoundingClientRect()
       const center = r.left - dockRect.left + r.width / 2
@@ -382,7 +411,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
       { left: number; top: number; width: number; height: number }
     > = {}
     for (const id of measuredIds) {
-      const itemEl = itemRefs.current[id]
+      const itemEl = getItemEl(id)
       if (!itemEl) continue
       const r = itemEl.getBoundingClientRect()
       const c = composition.current[id] ?? { shift: 0, scale: 1, lift: 0 }
@@ -467,7 +496,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
 
       // Compute target scales from pointer distance using raised-cosine falloff.
       for (const id of allIds) {
-        const slotEl = slotRefs.current[id]
+        const slotEl = getSlotEl(id)
         if (!slotEl) continue
         const center = baseCenters.current[id]
         if (center === undefined) continue
@@ -564,7 +593,7 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
 
       let anyMoving = false
       for (const id of allIds) {
-        const slotEl = slotRefs.current[id]
+        const slotEl = getSlotEl(id)
         if (!slotEl) continue
 
         const renderedScale = renderedScales[id] ?? 1
@@ -660,11 +689,11 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
   }, [])
 
   const isAppMinimized = useCallback((appId: string) => {
-    return windows.some((w) => w.id === appId && w.isMinimized)
+    return windows.some((w) => w.applicationId === appId && w.isMinimized)
   }, [windows])
 
   const isAppActive = useCallback((appId: string) => {
-    const appWindows = windows.filter((w) => w.id === appId)
+    const appWindows = windows.filter((w) => w.applicationId === appId)
     if (appWindows.length === 0) return false
     const maxZ = Math.max(...appWindows.map((w) => w.zIndex), 0)
     return appWindows.some((w) => w.zIndex === maxZ && !w.isMinimized)
@@ -707,10 +736,9 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
       </span>
       <div className="dock__section dock__section--pinned">
         {pinnedApps.map((app) => {
-          const open = windows.find((w) => w.id === app.id)
           const active = isAppActive(app.id)
           const minimized = isAppMinimized(app.id)
-          const hasOpenWindow = open && !minimized
+          const hasOpenWindow = windows.some((w) => w.applicationId === app.id && !w.isMinimized)
 
           return (
             <div
@@ -748,11 +776,11 @@ const Dock: React.FC<DockProps> = ({ reducedMotion = false }) => {
             {minimizedWindows.map((w) => (
               <div
                 key={w.id}
-                ref={(el) => { slotRefs.current[w.id] = el }}
+                ref={(el) => { minimizedSlotRefs.current[w.id] = el }}
                 className="dock__slot dock__slot--minimized"
               >
                 <button
-                  ref={(el) => { itemRefs.current[w.id] = el }}
+                  ref={(el) => { minimizedItemRefs.current[w.id] = el }}
                   type="button"
                   className={`dock__item dock__item--minimized ${hoveredId === w.id ? 'dock__item--hovered' : ''} ${reducedMotion ? 'dock__item--reduced-motion' : ''}`}
                   onClick={() => handleDockClick(w.id)}

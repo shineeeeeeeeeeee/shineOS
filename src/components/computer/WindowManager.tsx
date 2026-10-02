@@ -21,6 +21,14 @@ interface WindowManagerContextValue {
 const WindowManagerContext = createContext<WindowManagerContextValue | null>(null)
 
 let zIndexCounter = 100
+let windowIdCounter = 0
+
+/**
+ * Generates a unique window ID that never collides with an application ID.
+ * Format: window-<appId>-<n>
+ */
+export const generateWindowId = (appId: string): string =>
+  `window-${appId}-${++windowIdCounter}`
 
 const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [windows, setWindows] = useState<WindowState[]>([])
@@ -73,7 +81,20 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const minimizeWindow = useCallback((id: string) => {
     setWindows((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, isMinimized: true } : w))
+      prev.map((w) => {
+        if (w.id !== id) return w
+        // Snapshot the live geometry on EVERY minimize so a Dock restore always
+        // returns the window to where it actually was, not to a stale snapshot
+        // left over from an earlier minimize/restore cycle.
+        // Maximized windows keep their pre-maximize x/y/width/height in those
+        // same fields (maximize never rewrites them), so the snapshot is
+        // correct whether or not the window is maximized.
+        return {
+          ...w,
+          isMinimized: true,
+          previousPosition: { x: w.x, y: w.y, width: w.width, height: w.height },
+        }
+      })
     )
     setActiveWindowId((prev) => (prev === id ? null : prev))
   }, [])
@@ -98,9 +119,24 @@ const WindowManagerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const restoreWindow = useCallback((id: string) => {
     setWindows((prev) =>
       prev.map((w) => {
-        if (w.id !== id || !w.isMaximized) return w
-        const prevPos = w.previousPosition || { x: 100, y: 100, width: 480, height: 360 }
-        return { ...w, isMaximized: false, x: prevPos.x, y: prevPos.y, width: prevPos.width, height: prevPos.height }
+        if (w.id !== id) return w
+        if (!w.isMinimized && !w.isMaximized) return w
+        // Both flags are cleared in a single pass. Handling them separately let a
+        // window that was maximized when it got minimized return from its first
+        // restore un-maximized but STILL minimized, so the Dock entry stayed and
+        // the window stayed invisible.
+        // previousPosition is rewritten on every minimize (and on maximize), so
+        // it always holds the geometry this window should come back to.
+        const prevPos = w.previousPosition ?? { x: w.x, y: w.y, width: w.width, height: w.height }
+        return {
+          ...w,
+          isMinimized: false,
+          isMaximized: false,
+          x: prevPos.x,
+          y: prevPos.y,
+          width: prevPos.width,
+          height: prevPos.height,
+        }
       })
     )
   }, [])

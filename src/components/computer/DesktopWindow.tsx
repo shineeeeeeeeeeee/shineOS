@@ -3,6 +3,7 @@ import './DesktopWindow.css'
 
 export interface WindowState {
   id: string
+  applicationId: string
   title: string
   content: React.ReactNode
   x: number
@@ -189,10 +190,14 @@ const DesktopWindow: React.FC<DesktopWindowProps> = ({
     }
   }, [isResizing, windowState.id, onResize])
 
-  if (windowState.isMinimized) return null
-
   return (
     <div
+      // A minimized window stays mounted and is taken out of the desktop with the
+      // native `hidden` attribute, which removes it from layout, hit-testing and
+      // the accessibility tree. Unmounting instead would destroy the window's
+      // React subtree, so restoring would remount the app from scratch and lose
+      // whatever state it held (e.g. the Files location).
+      hidden={windowState.isMinimized}
       className={`desktop-window ${isActive ? 'desktop-window--active' : ''} ${windowState.isMaximized ? 'desktop-window--maximized' : ''} ${isDragging ? 'desktop-window--dragging' : ''} ${reducedMotion ? 'desktop-window--reduced-motion' : ''}`}
       style={{
         left: windowState.isMaximized ? 0 : windowState.x,

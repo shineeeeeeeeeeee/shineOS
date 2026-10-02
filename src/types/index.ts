@@ -37,6 +37,7 @@ export interface DesktopState {
 
 export interface WindowState {
   id: string
+  applicationId: string
   title: string
   content: ReactNode
   x: number
