@@ -1,0 +1,219 @@
+/* ============================================
+   LeetcodeDSA — notebook sheet
+
+   The archive is not an application, so this
+   sheet is not a case study. It is the notebook
+   page: a ruled sheet of paper carrying the
+   repository's own accounting of itself, followed
+   by the complete folder index in a manual's
+   hanging style.
+
+   Same paper, same hairlines and same monospace
+   register as the workbench plate, so the two
+   are visibly the same artifact at two scales.
+   ============================================ */
+
+.dsa-sheet {
+  min-width: 0;
+}
+
+/* --- Page --- */
+.dsa-sheet__page {
+  margin: 0 0 clamp(16px, 2.6cqi, 32px);
+  padding: clamp(14px, 3cqi, 26px) clamp(14px, 3cqi, 28px) clamp(16px, 3cqi, 26px);
+  border: 1px solid #c9b99c;
+  border-radius: 2px;
+  color: #3d362c;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Ruled paper at sheet scale. Flat repeating gradients, no image request. */
+  background-color: #ece3d0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(122, 104, 76, 0.07) 0 1px,
+      transparent 1px 17px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(122, 104, 76, 0.022) 0 1px,
+      transparent 1px 4px
+    );
+}
+
+.dsa-sheet__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #c9b99c;
+}
+
+.dsa-sheet__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #3d362c;
+}
+
+.dsa-sheet__repo {
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: #a2917a;
+  overflow-wrap: anywhere;
+}
+
+/* --- Entry --- */
+.dsa-sheet__entry {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: clamp(12px, 2.4cqi, 20px) 0 clamp(12px, 2.4cqi, 20px);
+}
+
+.dsa-sheet__entry-count {
+  font-size: clamp(26px, 7cqi, 44px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: #2f2921;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsa-sheet__entry-text {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: #7c6e5a;
+}
+
+.dsa-sheet__caret {
+  display: inline-block;
+  width: 6px;
+  height: 1.1em;
+  margin-left: 2px;
+  translate: 0 2px;
+  background: var(--color-accent);
+  opacity: 0.72;
+  animation: dsa-sheet-caret 1.15s steps(1, end) infinite;
+}
+
+@keyframes dsa-sheet-caret {
+  0%,
+  48% {
+    opacity: 0.72;
+  }
+  49%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Facts ---
+   A two-column definition list. The label is monospace and quiet; the value is
+   set larger because it is the number a reader came for. */
+.dsa-sheet__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0 clamp(16px, 3cqi, 34px);
+  margin: 0;
+  padding-top: 11px;
+  border-top: 1px solid #ddd0b6;
+}
+
+.dsa-sheet__fact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1px 10px;
+  padding: 5px 0;
+  border-bottom: 1px dotted rgba(185, 165, 130, 0.55);
+}
+
+.dsa-sheet__fact dt {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #a2917a;
+}
+
+.dsa-sheet__fact dd {
+  margin: 0;
+  font-size: 12px;
+  color: #4a4136;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Index note --- */
+.dsa-sheet__index-note {
+  margin: 0 0 var(--space-3);
+  max-width: 66ch;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #6f6353;
+}
+
+/* --- Folder index ---
+   All 131 folders, in a manual's hanging style: the number in the margin,
+   the folder name on the text baseline. Two columns once there is room, one
+   when there is not. No truncation — a folder name is the content, so it is
+   allowed to wrap rather than be clipped. */
+.dsa-sheet__index {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 clamp(18px, 3cqi, 40px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 10.5px;
+}
+
+.dsa-sheet__index-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 0 8px;
+  padding: 1.5px 0;
+  min-width: 0;
+}
+
+.dsa-sheet__index-no {
+  text-align: right;
+  font-size: 9px;
+  color: #a2917a;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid rgba(185, 165, 130, 0.5);
+  padding-right: 6px;
+}
+
+.dsa-sheet__index-name {
+  color: #5c5142;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+@container sheet (min-width: 680px) {
+  .dsa-sheet__index {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ============================================
+   Reduced motion
+
+   Only the caret moves. Reduced motion holds it solid; the page, the counts
+   and the index are static already and are not altered.
+   ============================================ */
+.dsa-sheet[data-reduced-motion] .dsa-sheet__caret {
+  animation: none;
+  opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsa-sheet .dsa-sheet__caret {
+    animation: none;
+    opacity: 0.72;
+  }
+}

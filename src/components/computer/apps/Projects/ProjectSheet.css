@@ -1,0 +1,581 @@
+/* ============================================
+   Project Sheet — an opened work artifact
+
+   The sheet is a document, not a case study. Its
+   order is fixed by what the eye needs first:
+
+     IDENTITY   index, title, category — small
+     VISUAL     the project's own capture, largest
+     WHAT IT IS one line, then the links
+     REASONING  why, then how, well below
+
+   The visual comes before the prose on purpose. A
+   sheet that opened with four paragraphs would bury
+   the one thing that makes a project legible.
+
+   Reading order is deliberately different at the two
+   ends of the scale, because the two jobs differ:
+
+     narrow  VISUAL → IDENTITY → DESCRIPTION → details
+             A phone has no room to hold a title and
+             a screenshot, so the screenshot takes the
+             opening slot and the title sits directly
+             beneath it. Both still land inside the
+             first viewport; only their sequence
+             changes.
+
+     wide    IDENTITY → VISUAL → DESCRIPTION → details
+             With room for both, the title leads and
+             the capture follows at full measure.
+
+   There is no card, no fill, no shadow, no rounded
+   container and no gradient used as decoration.
+   Structure is made from hairlines and whitespace;
+   the type does the rest. Nothing animates in.
+
+   Every band responds to the sheet window's own
+   inline size through the `sheet` container, so
+   resizing the window re-composes it exactly the way
+   a narrower screen would.
+
+     < 460px   narrow    one column, visual-led
+     >= 460px  medium    roomier measure, capped hero
+     >= 680px  wide      identity leads again; two-column
+     >= 900px  widest   full editorial measure
+   ============================================ */
+
+/* --- Shell ---
+   Cancels the window body padding the same way the Projects
+   workbench does, so the sheet runs edge to edge. */
+.sheet-app {
+  --sheet-accent: var(--color-accent);
+  --sheet-ink: #332c24;
+  --sheet-ink-soft: #6f6353;
+  --sheet-ink-faint: #9a8c74;
+  --sheet-rule: #ded2ba;
+  --sheet-rule-strong: #c3b195;
+
+  margin: -20px;
+  height: calc(100% + 40px);
+  min-width: 0;
+  display: flex;
+  background: #efe7d8;
+  color: var(--sheet-ink);
+  font-size: 13px;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: sheet;
+}
+
+@media (max-width: 1023px) {
+  .sheet-app {
+    margin: -16px;
+    height: calc(100% + 32px);
+  }
+}
+
+/* --- Scroll container --- */
+.sheet {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #f6f0e4;
+  /* Paper fibre, same two hairline gradients the workbench uses. */
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(120, 104, 82, 0.03) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(120, 104, 82, 0.026) 0 1px,
+      transparent 1px 4px
+    );
+  scrollbar-width: thin;
+  scrollbar-color: #cbbda6 transparent;
+}
+
+.sheet::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sheet::-webkit-scrollbar-track {
+  background: rgba(203, 189, 166, 0.22);
+  border-left: 1px solid #e0d5c0;
+}
+
+.sheet::-webkit-scrollbar-thumb {
+  background: #c9b89e;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-full);
+}
+
+.sheet::-webkit-scrollbar-thumb:hover {
+  background: #b3a084;
+  background-clip: content-box;
+}
+
+/* Reuse the SHINE OS focus ring, inset so the whole sheet lights rather than
+   drawing a second ring inside the window chrome. */
+.sheet:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+/* --- Document ---
+   A single readable column. The measure is capped so the sheet
+   never becomes a giant text column on a wide window.
+
+   The flex/column + order pair below is what reorders the
+   opening at narrow widths without touching the markup, so
+   the DOM stays a single document that reads correctly to a
+   screen reader and to a text browser at every size. The
+   `order` is neutralised again at 680px, where identity
+   takes the lead again. */
+.sheet__doc {
+  max-width: 940px;
+  margin: 0 auto;
+  padding:
+    clamp(20px, 4cqi, 46px)
+    clamp(16px, 5cqi, 58px)
+    clamp(20px, 3cqi, 36px);
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet__doc > * {
+  order: 4;
+}
+
+/* The capture opens the sheet. */
+.sheet__doc > .sheet__hero {
+  order: 1;
+}
+
+/* Shadow Tag's correction stays welded to the frame it corrects, so it
+   travels with the image rather than following the title down the page. */
+.sheet__doc > .sheet__disclaimer {
+  order: 2;
+}
+
+/* Then who it is, and what it is, in one breath. */
+.sheet__doc > .sheet__head {
+  order: 3;
+}
+
+/* --- 1. Identity --- */
+.sheet__head {
+  margin-bottom: clamp(14px, 2.6cqi, 28px);
+}
+
+.sheet__eyebrow {
+  margin: 0 0 var(--space-2);
+}
+
+.sheet__category {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sheet-accent);
+  opacity: 0.85;
+}
+
+.sheet__title {
+  margin: 0;
+  font-size: clamp(24px, 6.4cqi, 46px);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.02;
+  color: #2b251e;
+}
+
+/* Tier scales the title. Atlas leads; the archive shelf stays small — the sheet
+   for an old project should not shout louder than the one for the current work. */
+.sheet-app[data-tier='supporting'] .sheet__title {
+  font-size: clamp(21px, 5.2cqi, 38px);
+}
+
+.sheet-app[data-tier='secondary'] .sheet__title {
+  font-size: clamp(19px, 4.4cqi, 32px);
+}
+
+.sheet-app[data-tier='archive'] .sheet__title {
+  font-size: clamp(18px, 3.6cqi, 26px);
+}
+
+.sheet__summary {
+  margin: clamp(10px, 1.8cqi, 18px) 0 0;
+  max-width: 54ch;
+  font-size: clamp(12.5px, 1.5cqi, 14px);
+  line-height: 1.55;
+  color: var(--sheet-ink-soft);
+}
+
+/* --- 2. The strongest visual ---
+   The largest single object on the sheet. A hairline frame and nothing else:
+   no fill, no shadow, no overlay that could cover part of a UI screenshot. */
+.sheet__hero {
+  margin: 0 0 clamp(14px, 2.4cqi, 26px);
+}
+
+.sheet__hero-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--sheet-rule-strong);
+  border-radius: 2px;
+  background: #e7ddca;
+}
+
+/* A portrait phone capture is never stretched to fill a landscape column.
+   The cap is what keeps it reading as a phone. */
+.sheet-app[data-treatment='plate-tall'] .sheet__hero {
+  max-width: min(260px, 100%);
+}
+
+.sheet-app[data-treatment='plate-contact'] .sheet__hero {
+  max-width: min(460px, 100%);
+}
+
+/* --- Captions ---
+   The caption says what is in the frame; the source says where the file came
+   from. Both stay attached to the image they describe. */
+.sheet__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.sheet__caption-text {
+  color: var(--sheet-ink-soft);
+}
+
+.sheet__caption-source {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sheet-ink-faint);
+}
+
+/* --- Disclaimer ---
+   Shadow Tag's only visual is a capture of its own source file. The correction
+   is printed in the accent colour, above the fold and again beside the image,
+   so the sheet can never be read as showing gameplay. */
+.sheet__disclaimer {
+  margin: 0 0 clamp(12px, 2cqi, 20px);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--sheet-accent);
+  max-width: 62ch;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #7a5b4c;
+}
+
+/* --- 3. Links ---
+   Quiet inline citations, not buttons. A repository link is a source, not a
+   call to action, so it gets a rule that appears on hover rather than a filled
+   rectangle. */
+.sheet__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 clamp(16px, 2.6cqi, 30px);
+  padding-bottom: clamp(14px, 2.2cqi, 24px);
+  border-bottom: 1px solid var(--sheet-rule);
+}
+
+.sheet__link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #93805f;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.sheet__link:hover,
+.sheet__link:focus-visible {
+  color: var(--sheet-accent);
+  border-bottom-color: var(--sheet-accent);
+}
+
+.sheet__link-hint {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--sheet-ink-faint);
+}
+
+/* --- 4. Sections ---
+   Hairlines and whitespace only. No card, no fill, no border box — the
+   difference between a document and a grid of boxes. */
+.sheet__section {
+  margin: 0 0 clamp(16px, 2.6cqi, 32px);
+  padding-top: clamp(12px, 2cqi, 22px);
+  border-top: 1px solid var(--sheet-rule);
+}
+
+.sheet__section-label {
+  margin: 0 0 var(--space-3);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sheet-ink-faint);
+}
+
+.sheet__prose {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.62;
+  color: #574c3f;
+}
+
+/* --- Steps ---
+   A numbered list, set as hanging lines rather than pills. The number sits in
+   the margin so the text still forms one clean column. */
+.sheet__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 66ch;
+}
+
+.sheet__step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 0 10px;
+  padding: 5px 0;
+}
+
+.sheet__step + .sheet__step {
+  border-top: 1px dotted rgba(195, 177, 149, 0.7);
+}
+
+.sheet__step-mark {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--sheet-ink-faint);
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.sheet__step-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #574c3f;
+}
+
+/* --- Gallery ---
+   Atlas has three supporting captures. They are stacked, capped and spaced
+   apart rather than tiled, so the graph explorer above stays the primary image
+   and the sheet never shows the whole set of screenshots at once. */
+.sheet__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3.4cqi, 44px);
+  max-width: 640px;
+}
+
+.sheet__figure {
+  margin: 0;
+}
+
+.sheet__figure-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--sheet-rule-strong);
+  border-radius: 2px;
+  background: #e7ddca;
+  opacity: 0.94;
+}
+
+/* --- Technologies ---
+   One line of text. Not a wall of pills — a pill per technology turns a
+   six-word list into a hundred words of furniture. */
+.sheet__tech {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--sheet-ink-faint);
+  line-height: 1.9;
+}
+
+/* --- Colophon --- */
+.sheet__colophon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding:
+    clamp(14px, 2cqi, 22px)
+    clamp(16px, 5cqi, 58px)
+    clamp(18px, 3cqi, 34px);
+  border-top: 1px solid var(--sheet-rule);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a2917a;
+}
+
+/* ============================================
+   Composition
+   ============================================ */
+
+/* Narrow is the default: one column and visual-led. Nothing here reorders, so
+   the sheet never becomes a wall of text on a phone. */
+@container sheet (min-width: 460px) {
+  .sheet__doc {
+    padding-inline: clamp(24px, 6cqi, 58px);
+  }
+}
+
+@container sheet (min-width: 680px) {
+  /* Wide enough to hold an identity block and a capture side by side, so the
+     title leads again and the sheet returns to document order. Only the
+     sequence is restored — nothing about the content changes. */
+  .sheet__doc {
+    display: block;
+  }
+
+  .sheet__doc > * {
+    order: 0;
+  }
+
+  /* A portrait phone capture gets a real column beside the identity block
+     rather than a narrow strip floating above the text. This is the one place
+     a two-column reading is used, and it is used because a phone screenshot is
+     genuinely a tall object that text should not have to sit underneath. */
+  .sheet-app[data-treatment='plate-tall'] .sheet__doc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 240px);
+    column-gap: clamp(20px, 3.4cqi, 44px);
+    align-items: start;
+  }
+
+  .sheet-app[data-treatment='plate-tall'] .sheet__head {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    margin-bottom: 0;
+  }
+
+  .sheet-app[data-treatment='plate-tall'] .sheet__hero {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-bottom: 0;
+    max-width: none;
+  }
+
+  .sheet-app[data-treatment='plate-tall'] .sheet__links {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: start;
+  }
+
+  .sheet-app[data-treatment='plate-tall'] .sheet__section,
+  .sheet-app[data-treatment='plate-tall'] .sheet__disclaimer {
+    grid-column: 1 / -1;
+  }
+
+  /* Fullstack Chat is deliberately NOT given the two-column treatment the phone
+     capture gets. Its capture *is* the interface — a contacts sidebar and a
+     conversation pane — so squeezing it into a side column halves the width of
+     the one thing on the sheet worth looking at. It takes the full measure
+     beneath the identity block instead, the way Atlas does, and gets a slightly
+     heavier frame because the capture is the project rather than an
+     illustration of it. */
+  .sheet-app[data-project='fullstack-chat'] .sheet__hero-image {
+    border-color: #b6ae9d;
+  }
+}
+
+@container sheet (min-width: 900px) {
+  .sheet__doc {
+    padding-block: clamp(30px, 4cqi, 52px) clamp(24px, 3cqi, 40px);
+  }
+
+  /* Atlas is the only sheet given a hero larger than the document measure, and
+     it is capped at its own pixel width so a maximised window never scales a
+     1680px capture past its source. */
+  .sheet-app[data-project='atlas'] .sheet__hero-image {
+    max-width: min(1180px, 100%);
+  }
+}
+
+/* ============================================
+   Per-project character
+
+   Each project keeps the character of its own
+   material rather than sharing one house style.
+   ============================================ */
+
+/* Atlas: the technical register. Cool ink on the rule, so the graph explorer
+   reads as instrumentation rather than as a poster. */
+.sheet-app[data-project='atlas'] {
+  --sheet-rule: #d6cfc0;
+  --sheet-rule-strong: #b6ae9c;
+}
+
+/* Kindness Map: the storybook register. The rule warms toward the
+   illustration, and the illustration is given the full measure so the drawn
+   landscape is the first thing the eye lands on. */
+.sheet-app[data-project='kindness-map'] {
+  --sheet-rule: #dcd6c4;
+  --sheet-rule-strong: #c0b69c;
+  --sheet-accent: #7d9160;
+}
+
+.sheet-app[data-project='kindness-map'] .sheet__hero-image {
+  border-color: #c8bda2;
+}
+
+/* Shadow Tag: quiet and small. The sheet is an older project, so it is set
+   one step down from the leads and its correction is the loudest thing on it. */
+.sheet-app[data-project='shadow-tag'] .sheet__prose,
+.sheet-app[data-project='shadow-tag'] .sheet__step-text {
+  font-size: 12.5px;
+  color: #6b6152;
+}
+
+.sheet-app[data-project='shadow-tag'] .sheet__summary {
+  font-size: 12px;
+  color: #6f6353;
+}
+
+/* ============================================
+   Reduced motion
+
+   The sheet has no entrance, no loop and no autoplay — the only transitions
+   are the hover and focus colour steps on the links. Under reduced motion they
+   become instant state changes rather than animations.
+   ============================================ */
+.sheet-app[data-reduced-motion] .sheet__link {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__link {
+    transition: none;
+  }
+}

@@ -1,0 +1,83 @@
+/* ============================================
+   About Illustration
+   The approved artwork, sized as a real share of the opening spread.
+
+   The artwork is used exactly as supplied: its baked-in background
+   is the document's paper tone (#f7f2e8), so the two are
+   pixel-identical and the drawing has no visible edge.
+
+   Sizing rules:
+   - it fills its grid track (roughly 40–45% of the available content
+     width on a wide window), so it is never pinned to a small
+     centred thumbnail while the window is much wider
+   - it keeps the square aspect ratio exactly: never cropped,
+     never stretched, never distorted
+   - a generous cap stops it dominating on very large displays
+   - it never overflows the window horizontally
+
+   Deliberately absent: card, border, shadow, frame, radius,
+   tinted backdrop, blend mode or filter.
+   ============================================ */
+
+.about-illustration {
+  /* A plain, transparent track for the drawing. The vertical rhythm
+     around it belongs to the hero layout, not to the artwork. */
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+/* The single visual container. The frame animation will swap only
+   this element's `src` — no second image, no extra wrapper. */
+.about-illustration__image {
+  display: block;
+  /* Scales with the column so the composition uses the whole window. */
+  width: 100%;
+  /* Comfortable ceiling for very wide / maximised windows. */
+  max-width: 640px;
+  /* Square composition preserved — never cropped, never stretched. */
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: contain;
+  /* No chrome of any kind. */
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* --- Life ---
+   The drawing is alive because its `src` changes, nothing more.
+   There is no keyframe animation on it, no filter, no transform,
+   no opacity step and no transition, so there is no way for the
+   frames to cross-fade, drift out of register or be re-timed by
+   the compositor. Swapping the source is the whole effect.
+
+   The box is never re-laid-out either: `width: 100%` with a
+   square `aspect-ratio` means every frame occupies exactly the
+   same rect, so the loop cannot cause a reflow or a jump. */
+
+/* --- Reduced motion ---
+   The component runs no timer in this state, so the drawing is
+   already sitting on the master frame. These rules simply make
+   sure no stylesheet can reintroduce movement of its own. */
+.about-illustration--reduced-motion .about-illustration__image {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-illustration__image {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}

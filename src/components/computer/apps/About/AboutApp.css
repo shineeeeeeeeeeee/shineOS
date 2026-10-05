@@ -1,0 +1,705 @@
+/* ============================================
+   About — A Full-Window Editorial Document
+
+   The SHINE OS window is the canvas. There is no narrow centred
+   article column and no max-width wrapper: the document spans the
+   whole window and is composed into four bands.
+
+     HERO      text | approved artwork
+     SPLIT     ABOUT prose | CURRENTLY rows
+     FULL      A FEW THINGS ABOUT ME — topic columns
+     CLOSING   one quiet personal sentence
+     SIGN-OFF  small SHINE OS metadata
+
+   Structure comes from whitespace, typography, hairline rules and
+   alignment. There are deliberately no cards, no tile grids, no
+   shadows and no dashboard framing.
+
+   Every band reacts to the About window's own inline size through
+   the `about` container — never to the viewport. Breakpoints:
+     < 620px  narrow   single column throughout
+     >= 620px medium   two-column hero, two-column split
+     >= 900px wide     larger artwork, three-column topic spread
+
+   The `data-motion` hooks on the groups are what the settling
+   animation at the bottom of this file is built on. Nothing here
+   changes the composition — only how it arrives.
+   ============================================ */
+
+.about-app {
+  /* Cancel the window body padding so the paper fills the whole window. */
+  margin: -20px;
+  height: calc(100% + 40px);
+  min-width: 0;
+  display: flex;
+  background: #efe7d8;
+  color: #3a322a;
+  font-size: 13px;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: about;
+}
+
+@media (max-width: 1023px) {
+  .about-app {
+    margin: -16px;
+    height: calc(100% + 32px);
+  }
+}
+
+/* --- Scrollable paper ---
+   Base tone #f7f2e8 sits within about one RGB unit of the measured mean
+   of the approved illustration's own background (rgb 248,242,230), so
+   the artwork merges into the sheet with no visible rectangular edge. */
+.about-app__paper {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #f7f2e8;
+  /* Faint fibre texture — two hairline gradients, no image request. */
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(120, 104, 82, 0.035) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(120, 104, 82, 0.03) 0 1px,
+      transparent 1px 4px
+    );
+  scrollbar-width: thin;
+  scrollbar-color: #cbbda6 transparent;
+  scroll-behavior: smooth;
+}
+
+.about-app__paper::-webkit-scrollbar {
+  width: 10px;
+}
+
+.about-app__paper::-webkit-scrollbar-track {
+  background: rgba(203, 189, 166, 0.25);
+  border-left: 1px solid #e0d5c0;
+}
+
+.about-app__paper::-webkit-scrollbar-thumb {
+  background: #c9b89e;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-full);
+}
+
+.about-app__paper::-webkit-scrollbar-thumb:hover {
+  background: #b3a084;
+  background-clip: content-box;
+}
+
+.about-app__paper:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+/* --- Document ---
+   Full width of the window. `width: 100%` and no `max-width`, no
+   `margin: auto`: the sheet is the page. The only inset is a
+   proportional page margin that keeps the text off the window edge. */
+.about-doc {
+  width: 100%;
+  min-width: 0;
+  padding:
+    clamp(24px, 3.8cqi, 58px)
+    clamp(18px, 5.2cqi, 76px)
+    clamp(30px, 5.4cqi, 74px);
+}
+
+/* --- Hero ---
+   Opening spread. Narrow: the artwork follows the text in one column.
+   Wide: text left, artwork right, both vertically centred so the shorter
+   text column balances the taller square drawing. */
+.about-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(20px, 3.2cqi, 46px);
+}
+
+.about-hero__text,
+.about-hero__figure {
+  min-width: 0;
+}
+
+/* --- Header --- */
+.about-doc__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  font-size: clamp(9.5px, 1.15cqi, 11px);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a8b74;
+}
+
+.about-doc__eyebrow-mark {
+  width: 14px;
+  height: 1px;
+  background: var(--color-accent);
+  opacity: 0.7;
+}
+
+/* The greeting stays the single dominant type on the page. */
+.about-doc__greeting {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: clamp(30px, 7.6cqi, 56px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: #3a322a;
+}
+
+.about-doc__intro {
+  margin: 0 0 var(--space-5);
+  max-width: 52ch;
+  font-size: clamp(13px, 1.55cqi, 16px);
+  line-height: 1.65;
+  color: #4a4137;
+}
+
+.about-doc__signoff {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid #e0d5c0;
+  max-width: 46ch;
+  font-size: clamp(11px, 1.25cqi, 12.5px);
+  font-style: italic;
+  color: #8a7c67;
+}
+
+/* --- Sections ---
+   Hierarchy is carried by the small label and the sentence-sized lead.
+   The rule above each band is the only separator. */
+.about-section {
+  padding-top: clamp(20px, 3.2cqi, 42px);
+  border-top: 1px solid #e0d5c0;
+}
+
+.about-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.about-section__rule {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  align-self: center;
+  border: 1px solid var(--color-accent);
+  border-radius: 2px;
+  transform: rotate(45deg);
+  opacity: 0.75;
+}
+
+.about-section__label {
+  margin: 0;
+  font-size: clamp(10px, 1.2cqi, 11.5px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6d6153;
+}
+
+.about-section__lead {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.4cqi, 22px);
+  line-height: 1.25;
+  color: #8a4b32;
+}
+
+.about-section__body {
+  min-width: 0;
+}
+
+/* --- Prose --- */
+.about-prose {
+  margin: 0 0 var(--space-4);
+  max-width: 68ch;
+  font-size: clamp(12.5px, 1.3cqi, 14px);
+  line-height: 1.72;
+  color: #4a4137;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.about-prose:last-child {
+  margin-bottom: 0;
+}
+
+/* --- ABOUT / CURRENTLY band ---
+   One band, one hairline above it. The two sections are peers inside it,
+   so neither draws its own rule. */
+.about-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(18px, 2.8cqi, 40px);
+  padding-top: clamp(20px, 3.2cqi, 42px);
+  border-top: 1px solid #e0d5c0;
+}
+
+.about-split > .about-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* --- Currently rows --- */
+.about-rows {
+  margin: 0;
+}
+
+.about-rows__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 7px 0;
+  border-bottom: 1px dotted #ddd1ba;
+}
+
+.about-rows__row:last-child {
+  border-bottom: none;
+}
+
+.about-rows__label {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(11px, 1.25cqi, 12.5px);
+  font-weight: 600;
+  color: #3a322a;
+  white-space: nowrap;
+}
+
+.about-rows__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.8;
+}
+
+.about-rows__value {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: clamp(11.5px, 1.3cqi, 13px);
+  line-height: 1.55;
+  color: #6d6153;
+  overflow-wrap: break-word;
+}
+
+/* --- Interests ---
+   A ruled editorial spread, not a grid of cards: every topic is closed by
+   a hairline above it and the columns are deliberately unequal so the row
+   never reads as a repeating tile. */
+.about-topics {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 2cqi, 24px) clamp(20px, 3.2cqi, 48px);
+}
+
+.about-topics__item {
+  border-top: 1px solid #ded2bb;
+  padding-top: clamp(8px, 1cqi, 11px);
+}
+
+.about-topics__title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 3px;
+  font-size: clamp(12.5px, 1.4cqi, 14px);
+  font-weight: 600;
+  color: #3a322a;
+}
+
+.about-topics__glyph {
+  font-size: 0.8em;
+  color: var(--color-accent);
+  opacity: 0.85;
+}
+
+.about-topics__note {
+  margin: 0;
+  padding-left: 15px;
+  max-width: 44ch;
+  font-size: clamp(11.5px, 1.25cqi, 12.5px);
+  line-height: 1.55;
+  color: #6d6153;
+}
+
+/* --- Closing ---
+   The honest sentence. Same type as the prose, but with a shorter measure so
+   it stays a quiet aside rather than another paragraph block. */
+.about-closing {
+  min-width: 0;
+}
+
+.about-closing__line {
+  max-width: 52ch;
+  color: #5b5145;
+}
+
+/* --- Footer ---
+   Quiet sign-off. The metadata is a two-column definition list once the
+   window is wide, so the closing band still uses the full width. */
+.about-footer {
+  margin-top: clamp(24px, 3.6cqi, 48px);
+  padding-top: var(--space-4);
+  border-top: 1px solid #d5c8b0;
+}
+
+.about-footer__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--space-3);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9a8b74;
+}
+
+.about-footer__glyph {
+  color: var(--color-accent);
+  opacity: 0.8;
+}
+
+.about-footer__rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px clamp(20px, 3cqi, 44px);
+  margin: 0;
+  font-size: 11px;
+}
+
+.about-footer__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 2px 0;
+  color: #8a7c67;
+}
+
+.about-footer__label {
+  flex: 0 0 84px;
+  letter-spacing: 0.04em;
+  color: #a3937a;
+}
+
+.about-footer__value {
+  margin: 0;
+  min-width: 0;
+  color: #6d6153;
+  overflow-wrap: break-word;
+}
+
+/* ============================================
+   MEDIUM — two-column hero, two-column split
+   ============================================ */
+@container about (min-width: 620px) {
+  /* Text takes roughly 58% of the row, the square artwork the rest. */
+  .about-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr);
+  }
+
+  .about-split {
+    /* Longer prose gets the wider column; the metadata rows stay compact. */
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+
+  /* A single hairline separates the two sections — not a card edge. */
+  .about-split > .about-section + .about-section {
+    border-left: 1px solid #e6dcc8;
+    padding-left: clamp(18px, 2.6cqi, 38px);
+  }
+
+  .about-topics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-footer__rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(24px, 3.4cqi, 52px);
+  }
+}
+
+/* ============================================
+   WIDE — the artwork takes a real share of the spread
+   ============================================ */
+@container about (min-width: 900px) {
+  .about-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
+  }
+
+  /* Three columns, slightly unequal, so the row reads as a spread. */
+  .about-topics {
+    grid-template-columns: 1.06fr 0.94fr 1fr;
+  }
+}
+
+/* ============================================
+   MOTION — the document settles into place, once
+
+   The `data-motion` hooks from the structure pass are the only
+   things that move. Each one starts a few pixels low and faint,
+   then rises into its resting position and stops.
+
+   Deliberately not present: scaling, rotation, blur, springs,
+   bouncing, letter-by-letter splitting, parallax, cursor
+   tracking, or anything that keeps moving after the entrance.
+   The only continuous motion in the document is the illustration
+   breathing, which lives in AboutIllustration.css.
+
+   Only hooks that have no `data-motion` descendant animate.
+   The layout wrappers (hero, hero-text, split, section, rows,
+   topics, signoff) are groups, and fading a group on top of
+   children that are already fading would multiply their opacity
+   and leave the text looking washed out. Where a browser cannot
+   read `:has()`, neither rule applies and the document simply
+   appears fully opaque — still correct, just not animated.
+   ============================================ */
+
+@keyframes about-settle {
+  from {
+    opacity: 0;
+    transform: translateY(var(--about-settle-y, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Not yet seen: held at the start of its own settle. */
+.about-app--motion [data-motion]:not(:has([data-motion])):not([data-revealed]) {
+  opacity: 0;
+}
+
+/* Seen, and only ever seen once. `both` keeps the block at the
+   start of its settle through the stagger delay, so nothing pops
+   in early, and holds it at rest once the entrance is over. */
+.about-app--motion [data-motion]:not(:has([data-motion]))[data-revealed] {
+  animation: about-settle var(--about-settle-duration, 560ms)
+    var(--about-settle-ease, cubic-bezier(0.22, 0.61, 0.36, 1))
+    var(--about-settle-delay, 0ms)
+    both;
+}
+
+/* --- HERO ---
+   The page finds its voice, then the letter carries on. The drawing
+   arrives alongside the greeting rather than after it, but takes
+   slightly longer to land. */
+.about-app--motion [data-motion='hero-eyebrow'] {
+  --about-settle-y: 6px;
+  --about-settle-duration: 520ms;
+  --about-settle-delay: 0ms;
+}
+
+.about-app--motion [data-motion='hero-greeting'] {
+  --about-settle-y: 10px;
+  --about-settle-duration: 640ms;
+  --about-settle-delay: 90ms;
+}
+
+.about-app--motion [data-motion='hero-intro'] {
+  --about-settle-y: 8px;
+  --about-settle-duration: 600ms;
+  --about-settle-delay: 190ms;
+}
+
+.about-app--motion [data-motion='hero-signoff'] {
+  --about-settle-y: 6px;
+  --about-settle-duration: 560ms;
+  --about-settle-delay: 280ms;
+}
+
+.about-app--motion [data-motion='hero-illustration'] {
+  --about-settle-y: 12px;
+  --about-settle-duration: 760ms;
+  --about-settle-delay: 140ms;
+}
+
+/* --- SPLIT ---
+   Heading, then the sentence under it. The second section follows
+   just behind the first, which is enough to read as a sequence
+   rather than as two panels arriving at once. */
+.about-app--motion [data-motion='section-head'] {
+  --about-settle-y: 7px;
+  --about-settle-duration: 520ms;
+  --about-settle-delay: 0ms;
+}
+
+.about-app--motion [data-motion='section-lead'] {
+  --about-settle-y: 8px;
+  --about-settle-duration: 600ms;
+  --about-settle-delay: 70ms;
+}
+
+.about-app--motion .about-split > .about-section:nth-child(2) [data-motion='section-head'] {
+  --about-settle-delay: 80ms;
+}
+
+.about-app--motion .about-split > .about-section:nth-child(2) [data-motion='section-lead'] {
+  --about-settle-delay: 150ms;
+}
+
+.about-app--motion [data-motion='prose'] {
+  --about-settle-y: 7px;
+  --about-settle-duration: 560ms;
+  --about-settle-delay: 130ms;
+}
+
+.about-app--motion [data-motion='prose']:nth-of-type(2) {
+  --about-settle-delay: 190ms;
+}
+
+.about-app--motion [data-motion='prose']:nth-of-type(3) {
+  --about-settle-delay: 250ms;
+}
+
+/* CURRENTLY rows */
+.about-app--motion [data-motion='row'] {
+  --about-settle-y: 6px;
+  --about-settle-duration: 520ms;
+  --about-settle-delay: 110ms;
+}
+
+.about-app--motion [data-motion='row']:nth-child(2) {
+  --about-settle-delay: 160ms;
+}
+
+.about-app--motion [data-motion='row']:nth-child(3) {
+  --about-settle-delay: 210ms;
+}
+
+/* --- TOPICS ---
+   Six columns of a ruled spread, arriving a hair apart. */
+.about-app--motion [data-motion='topic'] {
+  --about-settle-y: 8px;
+  --about-settle-duration: 540ms;
+  --about-settle-delay: 110ms;
+}
+
+.about-app--motion [data-motion='topic']:nth-child(2) {
+  --about-settle-delay: 155ms;
+}
+
+.about-app--motion [data-motion='topic']:nth-child(3) {
+  --about-settle-delay: 200ms;
+}
+
+.about-app--motion [data-motion='topic']:nth-child(4) {
+  --about-settle-delay: 245ms;
+}
+
+.about-app--motion [data-motion='topic']:nth-child(5) {
+  --about-settle-delay: 290ms;
+}
+
+.about-app--motion [data-motion='topic']:nth-child(6) {
+  --about-settle-delay: 335ms;
+}
+
+/* --- CLOSING ---
+   Quietly. A smaller lift and a longer settle than anything above,
+   because this is the last thing the document has to say. */
+.about-app--motion .about-closing [data-motion='prose'] {
+  --about-settle-y: 6px;
+  --about-settle-duration: 640ms;
+  --about-settle-delay: 150ms;
+}
+
+/* --- FOOTER ---
+   Metadata stays as understated as it looks. */
+.about-app--motion [data-motion='footer-note'] {
+  --about-settle-y: 5px;
+  --about-settle-duration: 520ms;
+  --about-settle-delay: 0ms;
+}
+
+.about-app--motion [data-motion='meta-row'] {
+  --about-settle-y: 5px;
+  --about-settle-duration: 500ms;
+  --about-settle-delay: 70ms;
+}
+
+.about-app--motion [data-motion='meta-row']:nth-child(2) {
+  --about-settle-delay: 110ms;
+}
+
+.about-app--motion [data-motion='meta-row']:nth-child(3) {
+  --about-settle-delay: 150ms;
+}
+
+.about-app--motion [data-motion='meta-row']:nth-child(4) {
+  --about-settle-delay: 190ms;
+}
+
+/* --- Narrow windows: simplify instead of squeezing --- */
+@container about (max-width: 380px) {
+  .about-rows__row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .about-footer__label {
+    flex-basis: auto;
+  }
+}
+
+@container about (max-width: 300px) {
+  .about-section__rule {
+    display: none;
+  }
+
+  .about-doc__eyebrow-mark {
+    display: none;
+  }
+}
+
+/* --- Reduced motion ---
+   The document never enters a hidden state and never runs a
+   transition: it is simply there, fully settled from the first
+   frame. The React class covers the explicit setting; the media
+   query covers the case where the two ever disagree. */
+@media (prefers-reduced-motion: reduce) {
+  .about-app__paper {
+    scroll-behavior: auto;
+  }
+
+  .about-app [data-motion] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.about-app--reduced-motion .about-app__paper {
+  scroll-behavior: auto;
+}
+
+.about-app--reduced-motion .about-app__paper,
+.about-app--reduced-motion .about-app__paper * {
+  transition: none;
+  animation: none;
+}

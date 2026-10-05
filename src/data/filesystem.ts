@@ -12,10 +12,13 @@ export const virtualFilesystem: VirtualFile[] = [
   },
   // Home children
   {
+    // A document (not a folder) so Files launches the About application,
+    // the same way it launches the app-backed Resume and Contact documents.
     id: 'about',
     name: 'About',
-    type: 'folder',
+    type: 'document',
     parentId: 'root',
+    size: 8400,
     modified: new Date().toISOString(),
     metadata: { appId: 'about' },
   },

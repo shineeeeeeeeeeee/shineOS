@@ -1,0 +1,275 @@
+/* ============================================
+   LeetcodeDSA — live developer archive artifact
+
+   A notebook left open on the workbench. Deliberately
+   NOT a dashboard: no chart, no bar, no percentage,
+   no donut, no trend line, no activity graph.
+
+   Everything drawn here is a hairline and a
+   monospace measure. The "texture" is a ruled
+   baseline grid and a left gutter, both made from
+   flat repeating gradients at very low alpha —
+   the same paper-fibre approach the Projects work
+   sheet already uses, so the artifact reads as part
+   of the same sheet rather than as a widget bolted on.
+
+     bar      title + repository path
+     entry    the one claim the plate makes
+     index    four real folders, cycling slowly
+     files    counted extensions
+     foot     two derived facts
+
+   The only motion is a blinking caret and a
+   four-second index step. Reduced motion removes
+   both and changes nothing else.
+   ============================================ */
+
+.dsa {
+  --dsa-ink: #3d362c;
+  --dsa-ink-soft: #7c6e5a;
+  --dsa-ink-faint: #a2917a;
+  --dsa-rule: #c9b99c;
+  --dsa-rule-soft: #ddd0b6;
+  --dsa-accent: var(--color-accent);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: clamp(10px, 2.4%, 16px) clamp(10px, 2.6%, 16px) clamp(8px, 2%, 13px);
+  overflow: hidden;
+  color: var(--dsa-ink);
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: left;
+
+  /* Ruled paper. Two flat repeating gradients, no image request. */
+  background-color: #ece3d0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(122, 104, 76, 0.07) 0 1px,
+      transparent 1px 16px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(122, 104, 76, 0.022) 0 1px,
+      transparent 1px 4px
+    );
+}
+
+/* Left gutter — the margin rule of a notebook page, and the only thing
+   separating the index numbers from the names. */
+.dsa::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: clamp(26px, 7%, 40px);
+  width: 1px;
+  background: rgba(185, 165, 130, 0.5);
+  pointer-events: none;
+}
+
+/* --- Bar --- */
+.dsa__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--dsa-rule);
+}
+
+.dsa__title {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--dsa-ink);
+}
+
+.dsa__label {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--dsa-ink-faint);
+  overflow-wrap: anywhere;
+}
+
+/* --- Entry ---
+   The single factual claim. The count is set larger than everything
+   around it so the plate reads as a record rather than as a label. */
+.dsa__entry {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin: clamp(9px, 2.4%, 15px) 0 clamp(7px, 2%, 12px);
+}
+
+.dsa__entry-count {
+  font-size: clamp(17px, 5.4cqi, 24px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--dsa-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsa__entry-text {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--dsa-ink-soft);
+}
+
+/* The caret. A blinking block cursor on the entry line — the only
+   decorative motion in the artifact. */
+.dsa__caret {
+  display: inline-block;
+  width: 5px;
+  height: 1em;
+  margin-left: 1px;
+  translate: 0 1px;
+  background: var(--dsa-accent);
+  opacity: 0.72;
+  animation: dsa-caret 1.15s steps(1, end) infinite;
+}
+
+@keyframes dsa-caret {
+  0%,
+  48% {
+    opacity: 0.72;
+  }
+  49%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Index ---
+   Four folder names in repository order. Each line is one real
+   directory from the manifest. */
+.dsa__index {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(1px, 0.4%, 3px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsa__index-line {
+  display: grid;
+  grid-template-columns: clamp(26px, 7%, 40px) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+}
+
+/* Line number sits in the gutter, so it is quieter than the name. */
+.dsa__index-mark {
+  padding-left: 5px;
+  font-size: 8.5px;
+  color: var(--dsa-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsa__index-name {
+  padding-left: 8px;
+  font-size: 10px;
+  color: var(--dsa-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The line the window has just arrived at. A single opacity step,
+   not a slide or a fade-up — anything more would read as an
+   animation rather than as a page turning. */
+.dsa__index-line[data-fresh] .dsa__index-name {
+  color: var(--dsa-ink);
+}
+
+/* --- Files ---
+   Counted extensions. A definition list so the pairing is real in
+   the accessibility tree even though the visual list is marked
+   decorative: the spoken summary above carries the same numbers. */
+.dsa__files {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 5px;
+  margin: clamp(8px, 2.2%, 13px) 0 0;
+  padding-top: 7px;
+  border-top: 1px solid var(--dsa-rule-soft);
+  font-size: 9px;
+}
+
+.dsa__file-ext {
+  margin: 0;
+  letter-spacing: 0.04em;
+  color: var(--dsa-ink-faint);
+}
+
+.dsa__file-count {
+  margin: 0 5px 0 0;
+  color: var(--dsa-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsa__file-count::after {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin-left: 5px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: var(--dsa-rule);
+}
+
+/* --- Foot --- */
+.dsa__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 7px;
+  margin: 6px 0 0;
+  font-size: 8.5px;
+  letter-spacing: 0.05em;
+  color: var(--dsa-ink-faint);
+}
+
+.dsa__foot-sep {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--dsa-rule);
+}
+
+/* ============================================
+   Reduced motion
+
+   The artifact becomes completely static: the caret stops
+   blinking and the index stops advancing. Nothing is hidden
+   or removed — the same folders, the same numbers, the same
+   layout, simply not moving. Both the OS-level media query
+   and the prop-driven attribute are honoured, because the
+   prop is not threaded through everywhere the OS opens a
+   window.
+   ============================================ */
+.dsa[data-reduced-motion] .dsa__caret {
+  animation: none;
+  opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsa .dsa__caret {
+    animation: none;
+    opacity: 0.72;
+  }
+}

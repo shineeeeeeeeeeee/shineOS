@@ -1,6 +1,8 @@
 import React from 'react'
 import PlaceholderWindow from '../PlaceholderWindow'
 import FilesApp from './Files/FilesApp'
+import AboutApp from './About/AboutApp'
+import ProjectsApp from './Projects/ProjectsApp'
 
 interface AppContentProps {
   applicationId: string
@@ -16,6 +18,10 @@ interface AppContentProps {
  */
 const AppContent: React.FC<AppContentProps> = ({ applicationId, title, reducedMotion = false }) => {
   switch (applicationId) {
+    case 'about':
+      return <AboutApp reducedMotion={reducedMotion} />
+    case 'projects':
+      return <ProjectsApp reducedMotion={reducedMotion} />
     case 'files':
       return <FilesApp reducedMotion={reducedMotion} />
     default:
